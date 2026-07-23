@@ -5,9 +5,14 @@ from modules.lotto_db import (
 )
 
 
-def get_recent_df(recent_count=20):
+def get_recent_df(
+    lotto=None,
+    recent_count=20
+):
 
-    lotto = get_lotto_history()
+
+    if lotto is None:
+        lotto = get_lotto_history()
 
     recent_lotto = lotto.tail(recent_count)
 
@@ -49,9 +54,12 @@ def get_recent_df(recent_count=20):
     return recent_df
 
 
-def get_missing_df():
+def get_missing_df(
+    lotto=None
+):
 
-    lotto = get_lotto_history()
+    if lotto is None:
+        lotto = get_lotto_history()
 
     number_cols = [
         "번호1",

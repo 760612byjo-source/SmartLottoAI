@@ -47,6 +47,22 @@ def get_lotto_history():
         "보너스"
     ]
 
-    lotto = lotto.reset_index(drop=True)
+    lotto["회차"] = pd.to_numeric(
+        lotto["회차"],
+        errors="coerce"
+    )
+
+    # 회차가 없는 행 제거
+    lotto = lotto.dropna(
+        subset=["회차"]
+    )
+
+    lotto = lotto.sort_values(
+        "회차"
+    )
+
+    lotto = lotto.reset_index(
+        drop=True
+    )
 
     return lotto

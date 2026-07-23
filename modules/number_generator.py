@@ -4,6 +4,31 @@ from modules.score_engine import (
     calculate_score
 )
 
+from modules.adaptive_engine import (
+    get_adaptive_weights
+)
+
+from modules.evolution_engine import (
+    select_parents,
+    create_next_generation
+)
+
+# -------------------------
+# LAI 실험 옵션
+# -------------------------
+
+USE_ADAPTIVE = False
+USE_EVOLUTION = False
+USE_PAIR_ENGINE = False
+USE_TRIPLE_ENGINE = False
+
+PRIMES = {
+    2, 3, 5, 7,
+    11, 13, 17, 19,
+    23, 29, 31, 37,
+    41, 43
+}
+
 def create_number_set():
 
     numbers = random.sample(
@@ -102,20 +127,97 @@ def include_check(
 
     return count >= 2
 
+def adaptive_score(
+    numbers,
+    weights
+):
+
+    if not weights:
+        return 0
+
+    score = 0
+
+    odd = sum(
+        n % 2 == 1
+        for n in numbers
+    )
+
+    even = 6 - odd
+
+    score += weights.get(
+        "odd_even",
+        {}
+    ).get(
+        f"{odd}:{even}",
+        0
+    )
+
+    low = sum(
+        n <= 22
+        for n in numbers
+    )
+
+    high = 6 - low
+
+    score += weights.get(
+        "low_high",
+        {}
+    ).get(
+        f"{low}:{high}",
+        0
+    )
+
+    prime_count = sum(
+        n in PRIMES
+        for n in numbers
+    )
+
+    score += weights.get(
+        "prime",
+        {}
+    ).get(
+        str(prime_count),
+        0
+    )
+
+    end_sum = sum(
+        n % 10
+        for n in numbers
+    )
+
+    bucket = (
+        end_sum // 5
+    ) * 5
+
+    score += weights.get(
+        "endsum",
+        {}
+    ).get(
+        str(bucket),
+        0
+    )
+
+    return round(score, 2)
+
 
 def generate_numbers(
     exclude_numbers,
     include_numbers,
     hot_numbers,
     missing_numbers,
-    count=10
+    count=10,
+    use_adaptive=True
 ):
 
     results = []
 
+    adaptive_weights = get_adaptive_weights()
+
+    candidate_count = count * 100
+
     attempts = 0
 
-    while len(results) < count:
+    while len(results) < candidate_count:
 
         attempts += 1
 
@@ -153,13 +255,85 @@ def generate_numbers(
             for item in results
         ]:
 
-            score = calculate_score(
+            base_score = calculate_score(
                 numbers,
                 include_numbers,
                 hot_numbers,
                 missing_numbers
             )
 
+            if USE_ADAPTIVE:
+
+                adaptive = adaptive_score(
+                    numbers,
+                    adaptive_weights
+                )
+
+                score = round(
+                    (
+                        base_score * 0.9
+                        +
+                        adaptive * 0.1
+                    ),
+                    2
+                )
+
+            else:
+
+                score = base_score
+
+
+            results.append(
+                {
+                    "numbers": numbers,
+                    "score": score
+                }
+            )
+
+    # =========================
+    # Evolution Generator
+    # =========================
+
+    if USE_EVOLUTION:
+
+        elite = select_parents(
+            results,
+            top_n=min(50, len(results))
+        )
+
+        next_generation = create_next_generation(
+            elite,
+            offspring_count=200
+        )
+
+        for numbers in next_generation:
+
+            base_score = calculate_score(
+                numbers,
+                include_numbers,
+                hot_numbers,
+                missing_numbers
+            )
+
+            if USE_ADAPTIVE:
+
+                adaptive = adaptive_score(
+                    numbers,
+                    adaptive_weights
+                )
+
+                score = round(
+                    (
+                        base_score * 0.9
+                        +
+                        adaptive * 0.1
+                    ),
+                    2
+                )
+
+            else:
+
+                score = base_score
 
             results.append(
                 {
@@ -173,6 +347,6 @@ def generate_numbers(
         reverse=True
     )
 
-    return results
+    return results[:count]
 
 print("V2.5 number_generator loaded")
