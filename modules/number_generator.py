@@ -29,6 +29,15 @@ from modules.triple_engine import (
     calculate_triple_score
 )
 
+from modules.consensus_engine import (
+    get_consensus_numbers,
+    get_core_numbers
+)
+
+from modules.premium_generator import (
+    generate_premium_numbers
+)
+
 # -------------------------
 # LAI 실험 옵션
 # -------------------------
@@ -215,6 +224,33 @@ def adaptive_score(
 
     return round(score, 2)
 
+def calculate_core_bonus(
+    numbers,
+    core_numbers
+):
+
+    core_match = len(
+        set(numbers)
+        &
+        set(core_numbers)
+    )
+
+    if core_match >= 4:
+        return 3.0
+
+    elif core_match == 3:
+        return 1.5
+
+    elif core_match == 2:
+        return 0.5
+
+    return 0
+
+    return (
+        pair_score
+        * triple_score
+    )
+
 
 def generate_numbers(
     exclude_numbers,
@@ -232,6 +268,10 @@ def generate_numbers(
     pair_cache = load_pair_cache()
 
     triple_cache = load_triple_cache()
+
+    core_numbers = (
+        hot_numbers[:6]
+    )
 
     candidate_count = count * 100
 
@@ -291,7 +331,7 @@ def generate_numbers(
                 numbers,
                 triple_cache
             )
-
+            
             if USE_ADAPTIVE:
 
                 adaptive = adaptive_score(
@@ -317,11 +357,20 @@ def generate_numbers(
                         + (pair_score * 0.01)
                     )
 
+                    core_bonus = calculate_core_bonus(
+                        numbers,
+                        core_numbers
+                    )
+
                     if USE_TRIPLE_ENGINE:
 
                         score += (
                             triple_score * 0.001
                         )
+
+                    score += (
+                        core_bonus * 0.5
+                    )
 
                 else:
 
@@ -378,9 +427,9 @@ def generate_numbers(
 
                 score = round(
                     (
-                        base_score * 0.95
+                        base_score * 0.9
                         +
-                        adaptive * 0.05
+                        adaptive * 0.1
                     ),
                     2
                 )
@@ -398,6 +447,15 @@ def generate_numbers(
                         triple_score * 0.001
                     )
 
+                core_bonus = calculate_core_bonus(
+                    numbers,
+                    core_numbers
+                )    
+
+                score += (
+                    core_bonus * 0.5
+                )
+
             results.append(
                 {
                     "numbers": numbers,
@@ -410,6 +468,28 @@ def generate_numbers(
         reverse=True
     )
 
-    return results[:count]
+    top_results = results[:count]
+
+    consensus = get_consensus_numbers(
+        top_results
+    )
+
+    print("\n=== Consensus TOP 10 ===")
+
+    for number, freq in consensus[:10]:
+
+        print(
+            f"{number} : {freq}회"
+        )
+
+    core_numbers = get_core_numbers(
+        top_results,
+        top_n=6
+    )
+
+    print("\n=== CORE NUMBERS ===")
+
+    print(core_numbers)
+    return top_results
 
 print("V2.5 number_generator loaded")

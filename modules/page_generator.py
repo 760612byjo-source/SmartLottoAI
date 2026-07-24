@@ -17,6 +17,14 @@ from modules.number_generator import (
     generate_numbers
 )
 
+from modules.consensus_engine import (
+    get_core_numbers
+)
+
+from modules.premium_generator import (
+    generate_premium_numbers
+)
+
 
 def show_generator_page():
 
@@ -77,6 +85,17 @@ def show_generator_page():
             game_count
         )
 
+        core_numbers = get_core_numbers(
+            results,
+            top_n=6
+        )
+
+        premium_numbers = generate_premium_numbers(
+            core_numbers,
+            missing_numbers,
+            count=5
+        )
+
         st.success(
             f"{len(results)}게임 생성 완료"
         )
@@ -94,5 +113,31 @@ def show_generator_page():
                         str,
                         item["numbers"]
                     )
+                )
+            )
+
+        st.subheader(
+            "🔥 핵심번호 TOP6"
+        )
+
+        st.success(
+            " / ".join(
+                map(str, core_numbers)
+            )
+        )
+
+        st.subheader(
+            "👑 Premium 추천번호"
+        )
+
+        for idx, numbers in enumerate(
+            premium_numbers,
+            start=1
+        ):
+
+            st.write(
+                f"{idx}번 : "
+                + " ".join(
+                    map(str, numbers)
                 )
             )
