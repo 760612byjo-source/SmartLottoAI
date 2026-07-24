@@ -33,7 +33,7 @@ def show_backtest_page():
         "생성 게임 수",
         min_value=1,
         max_value=20,
-        value=5
+        value=10
     )
 
     use_adaptive = st.checkbox(

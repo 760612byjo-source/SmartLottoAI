@@ -13,14 +13,30 @@ from modules.evolution_engine import (
     create_next_generation
 )
 
+from modules.pair_loader import (
+    load_pair_cache
+)
+
+from modules.pair_engine import (
+    calculate_pair_score
+)
+
+from modules.triple_loader import (
+    load_triple_cache
+)
+
+from modules.triple_engine import (
+    calculate_triple_score
+)
+
 # -------------------------
 # LAI 실험 옵션
 # -------------------------
 
 USE_ADAPTIVE = False
 USE_EVOLUTION = False
-USE_PAIR_ENGINE = False
-USE_TRIPLE_ENGINE = False
+USE_PAIR_ENGINE = True
+USE_TRIPLE_ENGINE = True
 
 PRIMES = {
     2, 3, 5, 7,
@@ -213,6 +229,10 @@ def generate_numbers(
 
     adaptive_weights = get_adaptive_weights()
 
+    pair_cache = load_pair_cache()
+
+    triple_cache = load_triple_cache()
+
     candidate_count = count * 100
 
     attempts = 0
@@ -262,6 +282,16 @@ def generate_numbers(
                 missing_numbers
             )
 
+            pair_score = calculate_pair_score(
+                numbers,
+                pair_cache
+            )
+
+            triple_score = calculate_triple_score(
+                numbers,
+                triple_cache
+            )
+
             if USE_ADAPTIVE:
 
                 adaptive = adaptive_score(
@@ -280,8 +310,22 @@ def generate_numbers(
 
             else:
 
-                score = base_score
+                if USE_PAIR_ENGINE:
 
+                    score = (
+                        base_score
+                        + (pair_score * 0.01)
+                    )
+
+                    if USE_TRIPLE_ENGINE:
+
+                        score += (
+                            triple_score * 0.001
+                        )
+
+                else:
+
+                    score = base_score
 
             results.append(
                 {
@@ -315,6 +359,16 @@ def generate_numbers(
                 missing_numbers
             )
 
+            pair_score = calculate_pair_score(
+                numbers,
+                pair_cache
+            )
+
+            triple_score = calculate_triple_score(
+                numbers,
+                triple_cache
+            )
+
             if USE_ADAPTIVE:
 
                 adaptive = adaptive_score(
@@ -324,16 +378,25 @@ def generate_numbers(
 
                 score = round(
                     (
-                        base_score * 0.9
+                        base_score * 0.95
                         +
-                        adaptive * 0.1
+                        adaptive * 0.05
                     ),
                     2
                 )
 
             else:
 
-                score = base_score
+                score = (
+                    base_score
+                    + (pair_score * 0.01)
+                )
+
+                if USE_TRIPLE_ENGINE:
+
+                    score += (
+                        triple_score * 0.001
+                    )
 
             results.append(
                 {

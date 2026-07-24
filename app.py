@@ -74,6 +74,15 @@ from modules.page_adaptive import (
     show_adaptive_page
 )    
 
+from modules.pair_builder import (
+    save_pair_cache
+)
+
+from modules.triple_engine import (
+    build_triple_frequency,
+    calculate_triple_score
+)
+
 st.set_page_config(
     page_title="LAI",
     page_icon="🎱",
@@ -84,11 +93,11 @@ st.title("🎱 LAI")
 
 st.markdown("---")
 
+lotto = get_lotto_history()
+
 weights = load_adaptive_weights()
 
 if weights is None:
-
-    lotto = get_lotto_history()
 
     initialize_adaptive_weights(
         lotto
@@ -103,7 +112,8 @@ menu = st.sidebar.radio(
         "번호생성",
         "통계대시보드",
         "백테스트",
-        "Adaptive"
+        "Adaptive",
+        "Pair Engine"
     ]
 )
 
@@ -162,3 +172,25 @@ if menu == "백테스트":
 if menu == "Adaptive":
 
     show_adaptive_page()
+
+# ==========================
+# Pair Engine
+# ==========================
+
+if menu == "Pair Engine":
+
+    st.subheader(
+        "🎯 Pair Engine"
+    )
+
+    if st.button(
+        "Pair Cache 생성"
+    ):
+
+        count = save_pair_cache(
+            lotto
+        )
+
+        st.success(
+            f"{count:,}개 번호쌍 저장 완료"
+        )
