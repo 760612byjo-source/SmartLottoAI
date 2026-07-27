@@ -4,7 +4,10 @@ import pandas as pd
 from datetime import datetime
 
 from modules.pair_builder import save_pair_cache
-from modules.lotto_updater import update_lotto_history
+from modules.lotto_updater import (
+    update_lotto_history,
+    fetch_draw_data
+)
 from modules.triple_builder import (
     save_triple_cache
 )
@@ -106,10 +109,16 @@ def run_full_update():
 
     try:
 
-        added_count = append_missing_draws()
+        result = append_missing_draws()
 
         logs.append(
-            f"📥 자동 보충 대상 : {added_count}회"
+            f"📥 자동 보충 성공 : "
+            f"{result['success']}회"
+        )
+
+        logs.append(
+            f"❌ 실패 : "
+            f"{len(result['failed'])}회"
         )
 
     except Exception as e:
@@ -133,19 +142,19 @@ def run_full_update():
         )
 
     # lotto_history 생성
-    try:
+    #try:
 
-        count = build_lotto_history()
+        # count = build_lotto_history()
 
-        logs.append(
-            f"✅ lotto_history 생성 완료 ({count}회)"
-        )
+        # logs.append(
+        #     f"✅ lotto_history 생성 완료 ({count}회)"
+        # )
 
-    except Exception as e:
+    #except Exception as e:
 
-        logs.append(
-            f"❌ lotto_history 생성 실패 : {e}"
-        )
+        #logs.append(
+            #f"❌ lotto_history 생성 실패 : {e}"
+        #)
 
     # Pair Cache 생성
     try:
@@ -196,12 +205,10 @@ def run_full_update():
 
     return logs
 
-
 def get_update_status():
 
     lotto_df = pd.read_excel(
-        "data/3.집계.xlsm",
-        header=3
+        "data/lotto_history.xlsx"
     )
 
     db_draw = int(
@@ -216,6 +223,7 @@ def get_update_status():
         "need_update": latest_draw > db_draw
     }
 
+
 def get_missing_draws():
 
     try:
@@ -227,12 +235,14 @@ def get_missing_draws():
         db_draw = int(
             lotto_df["회차"].max()
         )
-
+    
     except:
 
         db_draw = 0
 
     latest_draw = update_lotto_history()
+
+    print("MISSING LATEST =", latest_draw)
 
     return list(
         range(
@@ -242,7 +252,53 @@ def get_missing_draws():
     )
 
 def append_missing_draws():
-
+    
     missing_draws = get_missing_draws()
 
-    return len(missing_draws)
+    success_count = 0
+
+    failed = []
+
+    history_df = pd.read_excel(
+        "data/lotto_history.xlsx"
+    )
+
+    for draw_no in missing_draws:
+        
+        row = fetch_draw_data(draw_no)
+
+        if row:
+
+            history_df.loc[
+                len(history_df)
+            ] = [
+                row["회차"],
+                row["추첨일"],
+                row["1열"],
+                row["2열"],
+                row["3열"],
+                row["4열"],
+                row["5열"],
+                row["6열"],
+                row["보너스"]
+            ]
+
+            success_count += 1
+
+        else:
+
+            failed.append(draw_no)
+
+    history_df = history_df.sort_values(
+        "회차"
+    )
+        
+    history_df.to_excel(
+        "data/lotto_history.xlsx",
+        index=False
+    )
+
+    return {
+        "success": success_count,
+        "failed": failed
+    }

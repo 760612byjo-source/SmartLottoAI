@@ -4,18 +4,55 @@ import requests
 def get_latest_draw(draw_no):
 
     url = (
-        "https://www.dhlottery.co.kr/common.do"
-        f"?method=getLottoNumber&drwNo={draw_no}"
+        "https://www.dhlottery.co.kr/"
+        "lt645/selectPstLt645InfoNew.do"
     )
 
-    response = requests.get(url)
+    params = {
+        "srchDir": "center",
+        "srchLtEpsd": draw_no
+    }
+
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "X-Requested-With": "XMLHttpRequest",
+        "Accept": "application/json"
+    }
+
+    response = requests.get(
+        url,
+        params=params,
+        headers=headers,
+        timeout=10
+    )
+
+    response.raise_for_status()
 
     return response.json()
 
 
 def update_lotto_history():
-    return 1196
 
+    try:
+
+        data = get_latest_draw(1234)
+
+        rows = data["data"]["list"]
+
+        if not rows:
+            return 0
+
+        return int(
+            rows[0]["ltEpsd"]
+        )   
+
+    except Exception as e:
+
+        print(
+            f"최신 회차 조회 실패 : {e}"
+        )
+
+        return 0
 
 def get_draw_data(draw_no):
 
@@ -31,20 +68,61 @@ def get_draw_data(draw_no):
         "보너스": 0
     }
 
-def append_missing_draws():
 
-    missing_draws = get_missing_draws()
+def fetch_draw_data(draw_no):
 
-    if not missing_draws:
-        return 0
+    try:
 
-    count = 0
+        data = get_latest_draw(draw_no)
 
-    for draw_no in missing_draws:
+        rows = data["data"]["list"]
 
-        # 여기서 회차 데이터 수집
-        # lotto_history.xlsx 추가
+        if not rows:
+            return None
 
-        count += 1
+        row = None
 
-    return count
+        for item in rows:
+
+            if item["ltEpsd"] == draw_no:
+
+                row = item
+
+                break
+
+        if row is None:
+
+            print(
+                f"회차를 찾을 수 없음 : {draw_no}"
+            )
+
+            return None
+
+        return {
+            "회차": row["ltEpsd"],
+            "추첨일": row["ltRflYmd"],
+            "1열": row["tm1WnNo"],
+            "2열": row["tm2WnNo"],
+            "3열": row["tm3WnNo"],
+            "4열": row["tm4WnNo"],
+            "5열": row["tm5WnNo"],
+            "6열": row["tm6WnNo"],
+            "보너스": row["bnsWnNo"]
+        }
+
+    except Exception as e:
+
+        print(
+            f"조회 실패 : {draw_no}회"
+        )
+
+        print(e)
+
+        return None
+    
+        
+if __name__ == "__main__":
+
+    print(
+        update_lotto_history()
+    )
