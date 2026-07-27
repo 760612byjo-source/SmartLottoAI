@@ -20,6 +20,14 @@ def show_admin_page():
     cache_info = get_cache_status()
 
     missing_draws = get_missing_draws()
+    update_range = ""
+
+    if missing_draws:
+
+        update_range = (
+            f"{missing_draws[0]}회 ~ "
+            f"{missing_draws[-1]}회"
+        )
 
 
     col1, col2, col3, col4, col5 = st.columns(5)
@@ -60,6 +68,14 @@ def show_admin_page():
             "⚠️ 업데이트 필요"
         )
 
+    if missing_draws:
+
+        st.info(
+            f"📥 업데이트 대상 : "
+            f"{update_range} "
+            f"({len(missing_draws):,}회)"
+        )
+
     else:
 
         st.success(
@@ -91,4 +107,5 @@ def show_admin_page():
 
         st.caption(
             f"누락 회차 예시 : {preview} ..."
+            f"(총 {len(missing_draws):,}회)"
         )

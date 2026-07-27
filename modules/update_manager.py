@@ -104,11 +104,33 @@ def run_full_update():
 
     logs = []
 
+    try:
+
+        added_count = append_missing_draws()
+
+        logs.append(
+            f"📥 자동 보충 대상 : {added_count}회"
+        )
+
+    except Exception as e:
+
+        logs.append(
+            f"❌ 자동 보충 오류 : {e}"
+        )
+
     missing_draws = get_missing_draws()
 
     logs.append(
         f"📥 누락 회차 : {len(missing_draws)}회"
     )
+
+    if missing_draws:
+
+        logs.append(
+            f"📋 대상 범위 : "
+            f"{missing_draws[0]}회 ~ "
+            f"{missing_draws[-1]}회"
+        )
 
     # lotto_history 생성
     try:
@@ -218,3 +240,9 @@ def get_missing_draws():
             latest_draw + 1
         )
     )
+
+def append_missing_draws():
+
+    missing_draws = get_missing_draws()
+
+    return len(missing_draws)
