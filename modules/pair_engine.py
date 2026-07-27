@@ -7,12 +7,12 @@ def build_pair_frequency(lotto_df):
     pair_counter = Counter()
 
     number_cols = [
-        "번호1",
-        "번호2",
-        "번호3",
-        "번호4",
-        "번호5",
-        "번호6"
+        "1열",
+        "2열",
+        "3열",
+        "4열",
+        "5열",
+        "6열"
     ]
 
     for _, row in lotto_df.iterrows():
@@ -50,3 +50,26 @@ def calculate_pair_score(
         )
 
     return score
+
+import pickle
+import pandas as pd
+
+def rebuild_pair_cache():
+
+    lotto = pd.read_excel(
+        "data/lotto_history.xlsx"
+    )
+
+    pair_counter = build_pair_frequency(
+        lotto
+    )
+
+    with open(
+        "data/pair_cache.pkl",
+        "wb"
+    ) as f:
+
+        pickle.dump(
+            pair_counter,
+            f
+        )

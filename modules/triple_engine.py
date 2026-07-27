@@ -7,12 +7,12 @@ def build_triple_frequency(lotto):
     triple_counter = Counter()
 
     number_cols = [
-        "번호1",
-        "번호2",
-        "번호3",
-        "번호4",
-        "번호5",
-        "번호6"
+        "1열",
+        "2열",
+        "3열",
+        "4열",
+        "5열",
+        "6열"
     ]
 
     for _, row in lotto.iterrows():
@@ -53,3 +53,37 @@ def calculate_triple_score(
         )
 
     return score
+
+import pickle
+import pandas as pd
+
+
+def rebuild_triple_cache():
+
+    lotto = pd.read_excel(
+        "data/lotto_history.xlsx"
+    )
+
+    triple_counter = build_triple_frequency(
+        lotto
+    )
+
+    triple_cache = {}
+
+    for triple, count in triple_counter.items():
+
+        key = "-".join(
+            map(str, triple)
+        )
+
+        triple_cache[key] = count
+
+    with open(
+        "data/triple_cache.pkl",
+        "wb"
+    ) as f:
+
+        pickle.dump(
+            triple_cache,
+            f
+        )

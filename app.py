@@ -83,6 +83,8 @@ from modules.triple_engine import (
     calculate_triple_score
 )
 
+from modules.page_admin import show_admin_page
+
 st.set_page_config(
     page_title="LAI",
     page_icon="🎱",
@@ -113,7 +115,8 @@ menu = st.sidebar.radio(
         "통계대시보드",
         "백테스트",
         "Adaptive",
-        "Pair Engine"
+        "Pair Engine",
+        "Admin"
     ]
 )
 
@@ -194,3 +197,17 @@ if menu == "Pair Engine":
         st.success(
             f"{count:,}개 번호쌍 저장 완료"
         )
+# ==========================
+# Admin
+# ==========================
+
+if menu == "Admin":
+    show_admin_page()
+
+
+df = pd.read_excel(
+    "data/3.집계.xlsm",
+    header=3
+)
+
+print(df.columns.tolist())
