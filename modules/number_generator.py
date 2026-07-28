@@ -41,7 +41,6 @@ from modules.premium_generator import (
 from modules.winner_filter import (
     build_winner_set,
     is_past_winner,
-    historical_penalty
 )
 
 from modules.lotto_db import (
@@ -56,6 +55,7 @@ USE_ADAPTIVE = False
 USE_EVOLUTION = False
 USE_PAIR_ENGINE = True
 USE_TRIPLE_ENGINE = True
+WINNER_SET = None
 
 PRIMES = {
     2, 3, 5, 7,
@@ -137,6 +137,34 @@ def prime_check(numbers):
     )
 
     return 1 <= prime_count <= 4
+
+def consecutive_score(numbers):
+
+    score = 0
+
+    numbers = sorted(numbers)
+
+    consecutive = 0
+
+    for i in range(5):
+
+        if numbers[i + 1] - numbers[i] == 1:
+
+            consecutive += 1
+
+    if consecutive == 0:
+
+        score += 3
+
+    elif consecutive == 1:
+
+        score += 1
+
+    elif consecutive >= 3:
+
+        score -= 5
+
+    return score
 
 
 def exclude_check(
@@ -273,6 +301,8 @@ def generate_numbers(
 
     results = []
 
+    used_numbers = set()
+
     adaptive_weights = get_adaptive_weights()
 
     pair_cache = load_pair_cache()
@@ -283,15 +313,21 @@ def generate_numbers(
         hot_numbers[:6]
     )
 
-    candidate_count = count * 100
+    candidate_count = count * 70
 
     attempts = 0
 
-    lotto_df = get_lotto_history()
+    global WINNER_SET
 
-    winner_set = build_winner_set(
-        lotto_df
-    )
+    if WINNER_SET is None:
+
+        lotto_df = get_lotto_history()
+
+        WINNER_SET = build_winner_set(
+            lotto_df
+        )
+
+    winner_set = WINNER_SET
 
     while len(results) < candidate_count:
 
@@ -332,83 +368,84 @@ def generate_numbers(
         ):
             continue
 
-        if numbers not in [
-            item["numbers"]
-            for item in results
-        ]:
+        numbers_key = tuple(numbers)
 
-            base_score = calculate_score(
-                numbers,
-                include_numbers,
-                hot_numbers,
-                missing_numbers
-            )
+        if numbers_key in used_numbers:
+            continue
 
-            pair_score = calculate_pair_score(
-                numbers,
-                pair_cache
-            )
+        used_numbers.add(numbers_key)
 
-            triple_score = calculate_triple_score(
-                numbers,
-                triple_cache
-            )
+        base_score = calculate_score(
+            numbers,
+            include_numbers,
+            hot_numbers,
+            missing_numbers
+        )
+
+        pair_score = calculate_pair_score(
+            numbers,
+            pair_cache
+        )
+
+        triple_score = calculate_triple_score(
+            numbers,
+            triple_cache
+        )
             
-            if USE_ADAPTIVE:
+        if USE_ADAPTIVE:
 
-                adaptive = adaptive_score(
-                    numbers,
-                    adaptive_weights
+            adaptive = adaptive_score(
+                numbers,
+                adaptive_weights
+            )
+
+            score = round(
+                (
+                    base_score * 0.9
+                    +
+                    adaptive * 0.1
+                ),
+                2
+            )
+
+        else:
+
+            if USE_PAIR_ENGINE:
+
+                score = (
+                    base_score
+                    + (pair_score * 0.01)
                 )
 
-                score = round(
-                    (
-                        base_score * 0.9
-                        +
-                        adaptive * 0.1
-                    ),
-                    2
+                core_bonus = calculate_core_bonus(
+                    numbers,
+                    core_numbers
+                )
+
+                if USE_TRIPLE_ENGINE:
+
+                    score += (
+                        triple_score * 0.001
+                    )
+
+                score += (
+                    core_bonus * 1.0
+                )
+
+                score += consecutive_score(
+                    numbers
                 )
 
             else:
 
-                if USE_PAIR_ENGINE:
+                score = base_score
 
-                    score = (
-                        base_score
-                        + (pair_score * 0.01)
-                    )
-
-                    core_bonus = calculate_core_bonus(
-                        numbers,
-                        core_numbers
-                    )
-
-                    if USE_TRIPLE_ENGINE:
-
-                        score += (
-                            triple_score * 0.001
-                        )
-
-                    score += (
-                        core_bonus * 0.5
-                    )
-
-                    score -= historical_penalty(
-                        numbers,
-                        lotto_df
-                    )
-
-                else:
-
-                    score = base_score
-
-            results.append(
-                {
-                    "numbers": numbers,
-                    "score": score
-                }
-            )
+        results.append(
+            {
+                "numbers": numbers,
+                "score": score
+            }
+        )
 
     # =========================
     # Evolution Generator
@@ -480,7 +517,11 @@ def generate_numbers(
                 )    
 
                 score += (
-                    core_bonus * 0.5
+                    core_bonus * 1.0
+                )
+
+                score += consecutive_score(
+                    numbers
                 )
 
                 score -= historical_penalty(
