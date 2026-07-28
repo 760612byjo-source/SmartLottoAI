@@ -189,6 +189,52 @@ def train_endsum_weights(
     return weights
 
 
+def train_three_group_weights(
+    result_df
+):
+
+    pattern_hits = {}
+
+    for _, row in result_df.iterrows():
+
+        pattern = row["삼그룹패턴"]
+
+        hit = row["적중수"]
+
+        if pattern not in pattern_hits:
+
+            pattern_hits[pattern] = []
+
+        pattern_hits[pattern].append(
+            hit
+        )
+
+    max_avg = max(
+        sum(v) / len(v)
+        for v in pattern_hits.values()
+    )
+
+    weights = {}
+
+    for pattern, hits in pattern_hits.items():
+
+        avg_hit = (
+            sum(hits)
+            /
+            len(hits)
+        )
+
+        weights[pattern] = round(
+            avg_hit
+            /
+            max_avg
+            * 10,
+            2
+        )
+
+    return weights
+
+
 def train_all_weights(
     result_df
 ):
@@ -213,6 +259,56 @@ def train_all_weights(
         "endsum":
         train_endsum_weights(
             result_df
+        ),
+
+        "three_group":
+        train_three_group_weights(
+            result_df
         )
 
     }
+
+def train_three_group_weights(
+    result_df
+):
+
+    pattern_hits = {}
+
+    for _, row in result_df.iterrows():
+
+        pattern = row["삼그룹패턴"]
+
+        hit = row["적중수"]
+
+        if pattern not in pattern_hits:
+
+            pattern_hits[pattern] = []
+
+        pattern_hits[pattern].append(
+            hit
+        )
+
+    max_avg = max(
+        sum(v) / len(v)
+        for v in pattern_hits.values()
+    )
+
+    weights = {}
+
+    for pattern, hits in pattern_hits.items():
+
+        avg_hit = (
+            sum(hits)
+            /
+            len(hits)
+        )
+
+        weights[pattern] = round(
+            avg_hit
+            /
+            max_avg
+            * 10,
+            2
+        )
+
+    return weights

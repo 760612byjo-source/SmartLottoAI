@@ -182,7 +182,40 @@ def calculate_score(
     score += (
         weights["endsum"]
         .get(
-            bucket,
+            str(bucket),
+            0
+        )
+    )
+
+    # -------------------
+    # 삼그룹 점수
+    # -------------------
+
+    group1 = sum(
+        1 <= n <= 15
+        for n in numbers
+    )
+
+    group2 = sum(
+        16 <= n <= 30
+        for n in numbers
+    )
+
+    group3 = sum(
+        31 <= n <= 45
+        for n in numbers
+    )
+
+    group_pattern = (
+        f"{group1}:{group2}:{group3}"
+    )
+
+    score += (
+        weights.get(
+            "three_group",
+            {}
+        ).get(
+            group_pattern,
             0
         )
     )

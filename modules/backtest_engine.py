@@ -170,6 +170,25 @@ def run_backtest(
             end_sum // 5
         ) * 5
 
+        group1 = sum(
+            1 <= n <= 15
+            for n in best_numbers
+        )
+                            
+        group2 = sum(
+            16 <= n <= 30
+            for n in best_numbers
+        )
+                            
+        group3 = sum(
+            31 <= n <= 45
+            for n in best_numbers
+        )
+                            
+        group_pattern = (
+            f"{group1}:{group2}:{group3}"
+        )
+
         results.append({
 
             "회차": int(
@@ -198,7 +217,10 @@ def run_backtest(
             "당첨번호":
             ", ".join(
                 map(str, actual_numbers)
-            )
+            ),
+
+            "삼그룹패턴":
+            group_pattern        
 
         })
 
