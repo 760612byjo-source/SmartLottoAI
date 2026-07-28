@@ -38,6 +38,16 @@ from modules.premium_generator import (
     generate_premium_numbers
 )
 
+from modules.winner_filter import (
+    build_winner_set,
+    is_past_winner,
+    historical_penalty
+)
+
+from modules.lotto_db import (
+    get_lotto_history
+)
+
 # -------------------------
 # LAI 실험 옵션
 # -------------------------
@@ -277,6 +287,12 @@ def generate_numbers(
 
     attempts = 0
 
+    lotto_df = get_lotto_history()
+
+    winner_set = build_winner_set(
+        lotto_df
+    )
+
     while len(results) < candidate_count:
 
         attempts += 1
@@ -285,6 +301,12 @@ def generate_numbers(
             break
 
         numbers = create_number_set()
+
+        if is_past_winner(
+            numbers,
+            winner_set
+        ):
+            continue
 
         if not odd_even_check(numbers):
             continue
@@ -372,6 +394,11 @@ def generate_numbers(
                         core_bonus * 0.5
                     )
 
+                    score -= historical_penalty(
+                        numbers,
+                        lotto_df
+                    )
+
                 else:
 
                     score = base_score
@@ -454,6 +481,11 @@ def generate_numbers(
 
                 score += (
                     core_bonus * 0.5
+                )
+
+                score -= historical_penalty(
+                    numbers,
+                    lotto_df
                 )
 
             results.append(
