@@ -223,6 +223,21 @@ def get_update_status():
         "need_update": latest_draw > db_draw
     }
 
+def load_update_status_log():
+
+    try:
+
+        with open(
+            "data/update_status.json",
+            "r",
+            encoding="utf-8"
+        ) as f:
+
+            return json.load(f)
+
+    except:
+
+        return None
 
 def get_missing_draws():
 
@@ -298,7 +313,60 @@ def append_missing_draws():
         index=False
     )
 
+    latest_draw = int(
+        history_df["회차"].max()
+    )
+
+    save_update_status_log(
+        latest_draw=latest_draw,
+        success_count=success_count,
+        failed_count=len(failed),
+        missing_count=len(missing_draws)
+    )
+
     return {
         "success": success_count,
         "failed": failed
     }
+
+
+def save_update_status_log(
+    latest_draw,
+    success_count,
+    failed_count,
+    missing_count
+):
+
+    status = {
+
+        "last_update":
+            datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
+
+        "latest_draw":
+            latest_draw,
+
+        "success_count":
+            success_count,
+
+        "failed_count":
+            failed_count,
+
+        "missing_count":
+            missing_count
+    }
+
+    with open(
+        "data/update_status.json",
+        "w",
+        encoding="utf-8"
+    ) as f:
+
+        json.dump(
+            status,
+            f,
+            ensure_ascii=False,
+            indent=4
+        )
+

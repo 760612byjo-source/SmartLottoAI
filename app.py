@@ -91,6 +91,10 @@ st.set_page_config(
     layout="wide"
 )
 
+from modules.update_manager import (
+    get_update_status
+)
+
 st.title("🎱 LAI")
 
 st.markdown("---")
@@ -104,6 +108,37 @@ if weights is None:
     initialize_adaptive_weights(
         lotto
     )
+
+status = get_update_status()
+
+st.sidebar.markdown("---")
+
+if status["need_update"]:
+
+    st.sidebar.warning(
+        f"""
+🟡 업데이트 필요
+
+DB : {status['db_draw']}회
+최신 : {status['latest_draw']}회
+"""
+    )
+
+    st.sidebar.caption(
+        "Admin → 전체 업데이트 실행"
+    )
+
+else:
+
+    st.sidebar.success(
+        f"""
+🟢 DB 최신 상태
+
+현재 : {status['db_draw']}회
+"""
+    )
+
+st.sidebar.markdown("---")
 
 menu = st.sidebar.radio(
     "메뉴",
@@ -132,7 +167,7 @@ if menu == "홈":
 # 파일 분석
 # ============================
 
-if menu == "파일 분석":
+elif menu == "파일 분석":
 
     show_file_analysis_page()
 
@@ -140,7 +175,7 @@ if menu == "파일 분석":
 # 로또 DB
 # =========================
 
-if menu == "로또DB":
+elif menu == "로또DB":
 
     show_lotto_db_page()
 
@@ -148,7 +183,7 @@ if menu == "로또DB":
 # 번호 생성
 # ==========================
 
-if menu == "번호생성":
+elif menu == "번호생성":
 
     show_generator_page()
 
@@ -156,7 +191,7 @@ if menu == "번호생성":
 # 통계 대시보드
 # ==========================
 
-if menu == "통계대시보드":
+elif menu == "통계대시보드":
 
     show_dashboard_page()
 
@@ -164,7 +199,7 @@ if menu == "통계대시보드":
 # 백테스트
 # ==========================
 
-if menu == "백테스트":
+elif menu == "백테스트":
 
     show_backtest_page()
 
@@ -172,7 +207,7 @@ if menu == "백테스트":
 # Adaptive
 # ==========================
 
-if menu == "Adaptive":
+elif menu == "Adaptive":
 
     show_adaptive_page()
 
@@ -180,7 +215,7 @@ if menu == "Adaptive":
 # Pair Engine
 # ==========================
 
-if menu == "Pair Engine":
+elif menu == "Pair Engine":
 
     st.subheader(
         "🎯 Pair Engine"
@@ -201,13 +236,5 @@ if menu == "Pair Engine":
 # Admin
 # ==========================
 
-if menu == "Admin":
+elif menu == "Admin":
     show_admin_page()
-
-
-df = pd.read_excel(
-    "data/3.집계.xlsm",
-    header=3
-)
-
-print(df.columns.tolist())
