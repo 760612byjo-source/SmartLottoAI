@@ -541,7 +541,10 @@ def generate_numbers(
         reverse=True
     )
 
-    top_results = results[:count]
+    top_results = apply_diversity_filter(
+        results,
+        count
+    )
 
     consensus = get_consensus_numbers(
         top_results
@@ -566,3 +569,42 @@ def generate_numbers(
     return top_results
 
 print("V2.5 number_generator loaded")
+
+def apply_diversity_filter(
+    results,
+    target_count=10
+):
+
+    selected = []
+
+    for candidate in results:
+
+        nums = set(
+            candidate["numbers"]
+        )
+
+        keep = True
+
+        for existing in selected:
+
+            common = len(
+                nums &
+                set(existing["numbers"])
+            )
+
+            if common >= 5:
+
+                keep = False
+                break
+
+        if keep:
+
+            selected.append(
+                candidate
+            )
+
+        if len(selected) >= target_count:
+
+            break
+
+    return selected
