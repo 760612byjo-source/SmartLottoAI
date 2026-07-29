@@ -73,3 +73,29 @@ def rebuild_pair_cache():
             pair_counter,
             f
         )
+
+import json
+
+
+def load_pair_cache():
+
+    with open(
+        "data/pair_cache.json",
+        "r",
+        encoding="utf-8"
+    ) as f:
+
+        raw_cache = json.load(f)
+
+    pair_cache = {}
+
+    for key, value in raw_cache.items():
+
+        pair = tuple(
+            int(x)
+            for x in key.split("-") 
+        )
+
+        pair_cache[pair] = value
+
+    return pair_cache

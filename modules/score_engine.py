@@ -14,49 +14,33 @@ def calculate_score(
     weights = get_adaptive_weights()
 
     if weights is None:
-
         return 0
 
-    # -------------------
     # 포함수
-    # -------------------
-
     include_count = len(
         set(numbers)
-        &
-        set(include_numbers)
+        & set(include_numbers)
     )
 
     score += include_count * 10
 
-    # -------------------
     # 강세수
-    # -------------------
-
     hot_count = len(
         set(numbers)
-        &
-        set(hot_numbers)
+        & set(hot_numbers)
     )
 
     score += hot_count * 10
 
-    # -------------------
     # 장기미출현수
-    # -------------------
-
     missing_count = len(
         set(numbers)
-        &
-        set(missing_numbers)
+        & set(missing_numbers)
     )
 
     score += missing_count * 4
 
-    # -------------------
     # 홀짝 패턴
-    # -------------------
-
     odd_count = sum(
         n % 2 == 1
         for n in numbers
@@ -70,16 +54,10 @@ def calculate_score(
 
     score += (
         weights["odd_even"]
-        .get(
-            odd_pattern,
-            0
-        )
+        .get(odd_pattern, 0)
     )
 
-    # -------------------
     # 저고 패턴
-    # -------------------
-
     low_count = sum(
         n <= 22
         for n in numbers
@@ -93,16 +71,10 @@ def calculate_score(
 
     score += (
         weights["low_high"]
-        .get(
-            low_pattern,
-            0
-        )
+        .get(low_pattern, 0)
     )
 
-    # -------------------
     # 소수 패턴
-    # -------------------
-
     PRIMES = [
         2, 3, 5, 7,
         11, 13, 17, 19,
@@ -117,16 +89,10 @@ def calculate_score(
 
     score += (
         weights["prime"]
-        .get(
-            str(prime_count),
-            0
-        )
+        .get(str(prime_count), 0)
     )
 
-    # -------------------
-    # 연번 점수
-    # -------------------
-
+    # 연속수
     consecutive = 0
 
     sorted_nums = sorted(numbers)
@@ -141,7 +107,6 @@ def calculate_score(
             sorted_nums[i]
             == 1
         ):
-
             consecutive += 1
 
     if consecutive == 1:
@@ -152,10 +117,7 @@ def calculate_score(
 
         score += 3
 
-    # -------------------
-    # 번호합 점수
-    # -------------------
-
+    # 번호합
     total = sum(numbers)
 
     if 100 <= total <= 180:
@@ -166,10 +128,7 @@ def calculate_score(
 
         score += 5
 
-    # -------------------
-    # 끝수합 점수
-    # -------------------
-
+    # 끝수합
     end_sum = sum(
         n % 10
         for n in numbers
@@ -181,16 +140,10 @@ def calculate_score(
 
     score += (
         weights["endsum"]
-        .get(
-            str(bucket),
-            0
-        )
+        .get(str(bucket), 0)
     )
 
-    # -------------------
-    # 삼그룹 점수
-    # -------------------
-
+    # 삼그룹
     group1 = sum(
         1 <= n <= 15
         for n in numbers
@@ -220,32 +173,24 @@ def calculate_score(
         )
     )
 
-    # -------------------
-    # 구간 분산 점수
-    # -------------------
-
+    # 구간분산
     sections = [0, 0, 0, 0, 0]
 
     for n in numbers:
 
         if n <= 10:
-
             sections[0] += 1
 
         elif n <= 20:
-
             sections[1] += 1
 
         elif n <= 30:
-
             sections[2] += 1
 
         elif n <= 40:
-
             sections[3] += 1
 
         else:
-
             sections[4] += 1
 
     if max(sections) <= 2:
@@ -256,10 +201,7 @@ def calculate_score(
 
         score += 5
 
-    # -------------------
-    # 끝수 분산 점수
-    # -------------------
-
+    # 끝수분산
     endings = [
         n % 10
         for n in numbers
@@ -269,10 +211,7 @@ def calculate_score(
         set(endings)
     )
 
-    # -------------------
     # 중복 끝수 감점
-    # -------------------
-
     duplicate_endings = (
         len(endings)
         -

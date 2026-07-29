@@ -81,6 +81,76 @@ def three_group_pattern(numbers):
 
     return f"{g1}:{g2}:{g3}"
 
+def sum_pattern(numbers):
+
+    total = sum(numbers)
+
+    bucket = (
+        total // 10
+    ) * 10
+
+    return bucket
+
+def section_pattern(numbers):
+
+    sections = [0, 0, 0, 0, 0]
+
+    for n in numbers:
+
+        if n <= 10:
+
+            sections[0] += 1
+
+        elif n <= 20:
+
+            sections[1] += 1
+
+        elif n <= 30:
+
+            sections[2] += 1
+
+        elif n <= 40:
+
+            sections[3] += 1
+
+        else:
+
+            sections[4] += 1
+
+    return ":".join(
+        map(str, sections)
+    )
+
+def ending_pattern(numbers):
+
+    endings = [
+        n % 10
+        for n in numbers
+    ]
+
+    counts = [0] * 10
+
+    for e in endings:
+
+        counts[e] += 1
+
+    return ":".join(
+        map(str, counts)
+    )
+
+def consecutive_pattern(numbers):
+
+    numbers = sorted(numbers)
+
+    consecutive = 0
+
+    for i in range(5):
+
+        if numbers[i + 1] - numbers[i] == 1:
+
+            consecutive += 1
+
+    return consecutive
 
 def extract_top_patterns(
     lotto_df,
@@ -95,6 +165,10 @@ def extract_top_patterns(
     prime_counter = Counter()
     endsum_counter = Counter()
     group_counter = Counter()
+    sum_counter = Counter()
+    section_counter = Counter()
+    ending_counter = Counter()  
+    consecutive_counter = Counter()
 
     for _, row in df.iterrows():
 
@@ -123,6 +197,22 @@ def extract_top_patterns(
             three_group_pattern(numbers)
         ] += 1
 
+        sum_counter[
+            sum_pattern(numbers)
+        ] += 1
+
+        section_counter[
+            section_pattern(numbers)
+        ] += 1
+
+        ending_counter[
+            ending_pattern(numbers)
+        ] += 1
+
+        consecutive_counter[
+            consecutive_pattern(numbers)
+        ] += 1
+
     return {
 
         "odd_even": [
@@ -148,6 +238,26 @@ def extract_top_patterns(
         "three_group": [
             x[0]
             for x in group_counter.most_common(top_n)
+        ],
+
+        "sum": [
+            x[0]
+            for x in sum_counter.most_common(top_n)
+        ],
+
+        "section": [
+            x[0]
+            for x in section_counter.most_common(top_n)
+        ],
+
+        "ending": [
+            x[0]
+            for x in ending_counter.most_common(top_n)
+        ],
+
+        "consecutive": [
+            x[0]
+            for x in consecutive_counter.most_common(top_n)
         ]
     }
 
@@ -204,7 +314,11 @@ def show_window_patterns(
                 "저고",
                 "소수",
                 "끝수합",
-                "삼그룹"
+                "삼그룹",
+                "번호합",
+                "구간분산",
+                "끝수분산",
+                "연속수"        
             ],
 
             "TOP4": [
@@ -212,7 +326,11 @@ def show_window_patterns(
                 ", ".join(map(str, data["low_high"])),
                 ", ".join(map(str, data["prime"])),
                 ", ".join(map(str, data["endsum"])),
-                ", ".join(map(str, data["three_group"]))
+                ", ".join(map(str, data["three_group"])),
+                ", ".join(map(str, data["sum"])),
+                ", ".join(map(str, data["section"])),
+                ", ".join(map(str, data["ending"])),
+                ", ".join(map(str, data["consecutive"]))
             ]
         })
 
@@ -227,8 +345,8 @@ def show_window_patterns(
 
 WINDOW_SCORE = {
     "27W": 1,
-    "20W": 2,
-    "10W": 3
+    "20W": 1,
+    "10W": 1
 }
 
 
@@ -248,6 +366,14 @@ def calculate_window_pattern_score(
     endsum = endsum_pattern(numbers)
 
     group = three_group_pattern(numbers)
+
+    sum_value = sum_pattern(numbers)
+
+    section = section_pattern(numbers)
+
+    ending = ending_pattern(numbers)
+
+    consecutive = consecutive_pattern(numbers)
 
     for window in [
         "27W",
@@ -270,6 +396,18 @@ def calculate_window_pattern_score(
             score += weight
 
         if group in window_patterns[window]["three_group"]:
+            score += weight
+
+        if sum_value in window_patterns[window]["sum"]:
+            score += weight
+
+        if section in window_patterns[window]["section"]:
+            score += weight
+
+        if ending in window_patterns[window]["ending"]:
+            score += weight
+
+        if consecutive in window_patterns[window]["consecutive"]:
             score += weight
 
     return score

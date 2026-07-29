@@ -24,6 +24,13 @@ from modules.window_pattern_engine import (
     show_window_patterns
 )
 
+from modules.score_analyzer import (
+    analyze_winner_scores
+)
+
+from modules.lotto_db import (
+    get_lotto_history
+)
 def show_admin_page():
 
     if "logs" not in st.session_state:
@@ -160,9 +167,7 @@ def show_admin_page():
             use_container_width=True
         ):
 
-            lotto_df = pd.read_excel(
-                "data/lotto_history.xlsx"
-            )
+            lotto_df = get_lotto_history()
 
             patterns = build_window_patterns(
                 lotto_df
@@ -170,6 +175,82 @@ def show_admin_page():
 
             show_window_patterns(
                 patterns
+            )
+
+        if st.button(
+            "🏆 당첨번호 점수 분석",
+            use_container_width=True
+        ):
+
+            lotto_df = get_lotto_history()
+
+            result_df, summary = (
+                analyze_winner_scores(
+                    lotto_df
+                )
+            )
+
+            st.write(
+                f"평균 점수 : {summary['평균']}"
+            )
+
+            st.write(
+                f"최소 점수 : {summary['최소']}"
+            )
+
+            st.write(
+                f"최대 점수 : {summary['최대']}"
+            )
+
+            st.write(
+                f"중앙값 : {summary['중앙값']}"
+            )
+
+            st.write(
+                f"상위80% 구간 : "
+                f"{summary['상위80%_하한']} ~ "
+                f"{summary['상위80%_상한']}"
+            )
+
+            st.subheader(
+                "🏆 상위 20개 점수"
+            )
+
+            top20_df = (
+                result_df
+                .sort_values(
+                    "total",
+                    ascending=False
+                )
+                .head(20)
+            )
+
+            st.dataframe(
+                top20_df,
+                use_container_width=True
+            )
+
+            st.subheader(
+                "📉 하위 20개 점수"
+            )
+
+            bottom20_df = (
+                result_df
+                .sort_values(
+                    "total",
+                    ascending=True
+                )
+                .head(20)
+            )
+
+            st.dataframe(
+                bottom20_df,
+                use_container_width=True
+            )
+
+            st.dataframe(
+                result_df,
+                use_container_width=True
             )
 
     if missing_draws:
@@ -220,11 +301,7 @@ def show_admin_page():
 
 def rebuild_cache_only():
 
-    lotto_df = pd.read_excel(
-        "data/lotto_history.xlsx"
-    )
-
-    st.write(lotto_df.columns.tolist())
+    lotto_df = get_lotto_history()
 
     pair_count = save_pair_cache(
         lotto_df

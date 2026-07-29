@@ -453,9 +453,9 @@ def generate_numbers(
                 )
 
                 score += (
-                    window_pattern_score * 0.5
+                    window_pattern_score * 0.2
                 )
-
+            
             else:
 
                 score = base_score
@@ -552,7 +552,7 @@ def generate_numbers(
                 )
 
                 score += (
-                    window_pattern_score * 0.5
+                    window_pattern_score * 0.2
                 )   
 
             results.append(
@@ -562,15 +562,122 @@ def generate_numbers(
                 }
             )
 
+    TARGET_SCORE = 57.15
+
     results.sort(
-        key=lambda x: x["score"],
-        reverse=True
+        key=lambda x: abs(
+            x["score"]
+            - TARGET_SCORE
+        )
     )
 
-    top_results = apply_diversity_filter(
-        results,
-        count
+    all_scores = [
+        item["score"]
+        for item in results
+    ]
+
+    print(
+        f"Generated Score Range : "
+        f"{min(all_scores):.2f}"
+        f" ~ "
+        f"{max(all_scores):.2f}"
     )
+
+    print(
+        f"Generated Score Avg : "
+        f"{sum(all_scores) / len(all_scores):.2f}"
+    )
+
+    top_scores = sorted(
+        all_scores,
+        reverse=True
+    )[:20]
+
+    print(
+        f"TOP20 Avg : "
+        f"{sum(top_scores) / len(top_scores):.2f}"
+    )
+
+    print(
+        f"Target Winner Avg : 57.15"
+    )
+
+    print(
+        f"Gap : "
+        f"{(sum(all_scores) / len(all_scores)) - 57.15:.2f}"
+    )
+
+    TARGET_MIN = 42.33
+    TARGET_MAX = 82.13
+    
+    score_band_results = [
+    
+        item
+    
+        for item in results
+    
+        if TARGET_MIN
+        <= item["score"]
+        <= TARGET_MAX
+    
+    ]
+
+    print(
+        f"Band Count : "
+        f"{len(score_band_results)}"
+    )
+
+    low_score_count = len(
+
+        [
+
+            item
+
+            for item in results
+
+            if item["score"] < 80
+
+        ]
+
+    )
+
+    print(
+        f"Score < 80 : "
+        f"{low_score_count}"
+    )
+
+    if len(score_band_results) > 0:
+
+        scores = [
+            item["score"]
+            for item in score_band_results
+        ]
+
+        print(
+            f"Band Score Range : "
+            f"{min(scores):.2f}"
+            f" ~ "
+            f"{max(scores):.2f}"
+        )
+
+
+    if len(score_band_results) >= count:
+
+        top_results = (
+            apply_diversity_filter(
+                score_band_results,
+                count
+            )
+        )
+
+    else:
+
+        top_results = (
+            apply_diversity_filter(
+                results,
+                count
+            )
+        )
 
     consensus = get_consensus_numbers(
         top_results
@@ -595,6 +702,59 @@ def generate_numbers(
     return top_results
 
 print("V2.5 number_generator loaded")
+
+def calculate_score_detail(
+    adaptive_score,
+    pair_score,
+    triple_score,
+    core_bonus,
+    window_pattern_score
+):
+
+    window_score = (
+        window_pattern_score * 0.2
+    )
+
+    total_score = (
+        adaptive_score
+        + (pair_score * 0.01)
+        + (triple_score * 0.001)
+        + core_bonus
+        + window_score
+    )
+
+    return {
+
+        "adaptive": round(
+            adaptive_score,
+            2
+        ),
+
+        "pair": round(
+            pair_score,
+            2
+        ),
+
+        "triple": round(
+            triple_score,
+            2
+        ),
+
+        "core": round(
+            core_bonus,
+            2
+        ),
+
+        "window": round(
+            window_score,
+            2
+        ),
+
+        "total": round(
+            total_score,
+            2
+        )
+    }
 
 def apply_diversity_filter(
     results,

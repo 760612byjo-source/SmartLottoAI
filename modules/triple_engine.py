@@ -1,5 +1,17 @@
 from collections import Counter
 from itertools import combinations
+import json
+
+
+def load_triple_cache():
+
+    with open(
+        "data/triple_cache.json",
+        "r",
+        encoding="utf-8"
+    ) as f:
+
+        return json.load(f)
 
 
 def build_triple_frequency(lotto):
