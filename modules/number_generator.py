@@ -124,15 +124,8 @@ def end_sum_check(numbers):
 
 def prime_check(numbers):
 
-    primes = {
-        2, 3, 5, 7,
-        11, 13, 17, 19,
-        23, 29, 31, 37,
-        41, 43
-    }
-
     prime_count = sum(
-        n in primes
+        n in PRIMES
         for n in numbers
     )
 
@@ -283,11 +276,6 @@ def calculate_core_bonus(
         return 0.5
 
     return 0
-
-    return (
-        pair_score
-        * triple_score
-    )
 
 
 def generate_numbers(
@@ -522,12 +510,7 @@ def generate_numbers(
 
                 score += consecutive_score(
                     numbers
-                )
-
-                score -= historical_penalty(
-                    numbers,
-                    lotto_df
-                )
+                )   
 
             results.append(
                 {
