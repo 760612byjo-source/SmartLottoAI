@@ -19,6 +19,11 @@ from modules.update_manager import (
     load_update_status_log
 )
 
+from modules.window_pattern_engine import (
+    build_window_patterns,
+    show_window_patterns
+)
+
 def show_admin_page():
 
     if "logs" not in st.session_state:
@@ -150,6 +155,23 @@ def show_admin_page():
                 f"   Triple Cache: {triple_count:,}개"
             )
 
+        if st.button(
+            "📊 Multi-Window 분석",
+            use_container_width=True
+        ):
+
+            lotto_df = pd.read_excel(
+                "data/lotto_history.xlsx"
+            )
+
+            patterns = build_window_patterns(
+                lotto_df
+            )
+
+            show_window_patterns(
+                patterns
+            )
+
     if missing_draws:
 
         preview = ", ".join(
@@ -201,6 +223,8 @@ def rebuild_cache_only():
     lotto_df = pd.read_excel(
         "data/lotto_history.xlsx"
     )
+
+    st.write(lotto_df.columns.tolist())
 
     pair_count = save_pair_cache(
         lotto_df

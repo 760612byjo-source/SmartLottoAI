@@ -47,6 +47,11 @@ from modules.lotto_db import (
     get_lotto_history
 )
 
+from modules.window_pattern_engine import (
+    build_window_patterns,
+    calculate_window_pattern_score
+)
+
 # -------------------------
 # LAI 실험 옵션
 # -------------------------
@@ -56,6 +61,7 @@ USE_EVOLUTION = False
 USE_PAIR_ENGINE = True
 USE_TRIPLE_ENGINE = True
 WINNER_SET = None
+WINDOW_PATTERNS = None
 
 PRIMES = {
     2, 3, 5, 7,
@@ -297,6 +303,21 @@ def generate_numbers(
 
     triple_cache = load_triple_cache()
 
+    global WINDOW_PATTERNS
+
+    if WINDOW_PATTERNS is None:
+
+        lotto_df = get_lotto_history()
+
+        WINDOW_PATTERNS = (
+            build_window_patterns(
+                lotto_df
+            )
+        )
+
+    window_patterns = WINDOW_PATTERNS
+
+    
     core_numbers = (
         hot_numbers[:6]
     )
@@ -379,6 +400,13 @@ def generate_numbers(
             numbers,
             triple_cache
         )
+
+        window_pattern_score = (
+            calculate_window_pattern_score(
+                numbers,
+                window_patterns
+            )
+        )
             
         if USE_ADAPTIVE:
 
@@ -422,6 +450,10 @@ def generate_numbers(
 
                 score += consecutive_score(
                     numbers
+                )
+
+                score += (
+                    window_pattern_score * 0.5
                 )
 
             else:
@@ -470,6 +502,13 @@ def generate_numbers(
                 triple_cache
             )
 
+            window_pattern_score = (
+                calculate_window_pattern_score(
+                    numbers,
+                    window_patterns
+                )
+            )
+
             if USE_ADAPTIVE:
 
                 adaptive = adaptive_score(
@@ -510,6 +549,10 @@ def generate_numbers(
 
                 score += consecutive_score(
                     numbers
+                )
+
+                score += (
+                    window_pattern_score * 0.5
                 )   
 
             results.append(
