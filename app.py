@@ -58,14 +58,6 @@ from modules.page_backtest import (
 )
 
 from modules.adaptive_engine import (
-    initialize_adaptive_weights
-)
-
-from modules.lotto_db import (
-    get_lotto_history
-)
-
-from modules.adaptive_engine import (
     load_adaptive_weights,
     initialize_adaptive_weights
 )
@@ -81,6 +73,11 @@ from modules.pair_builder import (
 from modules.triple_engine import (
     build_triple_frequency,
     calculate_triple_score
+)
+
+from modules.pattern_engine import (
+    build_multi_window_stats,
+    calculate_pattern_score
 )
 
 from modules.page_admin import show_admin_page

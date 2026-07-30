@@ -41,7 +41,7 @@ def crossover(parent1, parent2):
 # 변이
 # -------------------------
 
-def mutate(numbers, rate=0.10):
+def mutate(numbers, rate=0.20):
 
     result = numbers.copy()
 
@@ -67,7 +67,7 @@ def mutate(numbers, rate=0.10):
 
 def create_next_generation(
     elite_numbers,
-    offspring_count=200
+    offspring_count=500
 ):
 
     children = []

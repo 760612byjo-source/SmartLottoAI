@@ -34,10 +34,6 @@ from modules.consensus_engine import (
     get_core_numbers
 )
 
-from modules.premium_generator import (
-    generate_premium_numbers
-)
-
 from modules.winner_filter import (
     build_winner_set,
     is_past_winner,
@@ -182,6 +178,9 @@ def include_check(
     include_numbers
 ):
 
+    if not include_numbers:
+        return True
+
     count = len(
         set(numbers) &
         set(include_numbers)
@@ -189,7 +188,7 @@ def include_check(
 
     return count >= 2
 
-def adaptive_score(
+def calculate_adaptive_score(
     numbers,
     weights
 ):
@@ -289,8 +288,7 @@ def generate_numbers(
     include_numbers,
     hot_numbers,
     missing_numbers,
-    count=10,
-    use_adaptive=True
+    count=10
 ):
 
     results = []
@@ -410,7 +408,7 @@ def generate_numbers(
             
         if USE_ADAPTIVE:
 
-            adaptive = adaptive_score(
+            adaptive = calculate_adaptive_score(
                 numbers,
                 adaptive_weights
             )
@@ -428,9 +426,28 @@ def generate_numbers(
 
             if USE_PAIR_ENGINE:
 
-                score = (
-                    base_score
-                    + (pair_score * 0.01)
+                score = 0
+
+                score += max(
+                    0,
+                    20 - abs(base_score - 51.41)
+                )
+
+                score += max(
+                    0,
+                    30 - (
+                        abs(pair_score - 294.33) / 2
+                    )
+                )
+
+                score += max(
+                    0,
+                    30 - abs(triple_score - 54.09)
+                )
+
+                score += max(
+                    0,
+                    20 - abs(window_pattern_score - 13.70)
                 )
 
                 core_bonus = calculate_core_bonus(
@@ -438,23 +455,11 @@ def generate_numbers(
                     core_numbers
                 )
 
-                if USE_TRIPLE_ENGINE:
-
-                    score += (
-                        triple_score * 0.001
-                    )
-
-                score += (
-                    core_bonus * 1.0
-                )
+                score += core_bonus
 
                 score += consecutive_score(
                     numbers
-                )
-
-                score += (
-                    window_pattern_score * 0.2
-                )
+                )                
             
             else:
 
@@ -511,7 +516,7 @@ def generate_numbers(
 
             if USE_ADAPTIVE:
 
-                adaptive = adaptive_score(
+                adaptive = calculate_adaptive_score(
                     numbers,
                     adaptive_weights
                 )
@@ -527,34 +532,42 @@ def generate_numbers(
 
             else:
 
-                score = (
-                    base_score
-                    + (pair_score * 0.01)
+                score = 0
+
+                score += max(
+                    0,
+                    20 - abs(base_score - 51.41)
                 )
 
-                if USE_TRIPLE_ENGINE:
-
-                    score += (
-                        triple_score * 0.001
+                score += max(
+                    0,
+                    30 - (
+                        abs(pair_score - 294.33) / 2
                     )
+                )
+
+                score += max(
+                    0,
+                    30 - abs(triple_score - 54.09)
+                )
+
+                score += max(
+                    0,
+                    20 - abs(window_pattern_score - 13.70)
+                )
 
                 core_bonus = calculate_core_bonus(
                     numbers,
                     core_numbers
-                )    
-
-                score += (
-                    core_bonus * 1.0
                 )
+
+                score += core_bonus
 
                 score += consecutive_score(
                     numbers
                 )
 
-                score += (
-                    window_pattern_score * 0.2
-                )   
-
+                
             results.append(
                 {
                     "numbers": numbers,
@@ -562,19 +575,38 @@ def generate_numbers(
                 }
             )
 
-    TARGET_SCORE = 57.15
-
     results.sort(
-        key=lambda x: abs(
-            x["score"]
-            - TARGET_SCORE
-        )
+        key=lambda x: x["score"],
+        reverse=True
+    )
+
+    score_band_results = [
+
+        item
+
+        for item in results
+
+        if 68 <= item["score"] <= 70
+
+    ]
+
+    print(
+        f"68~70 Score Band : "
+        f"{len(score_band_results)}"
     )
 
     all_scores = [
         item["score"]
         for item in results
     ]
+
+    if len(all_scores) == 0:
+
+        print(
+            "Generated Score Range : EMPTY"
+        )
+
+        return []
 
     print(
         f"Generated Score Range : "
@@ -599,85 +631,16 @@ def generate_numbers(
     )
 
     print(
-        f"Target Winner Avg : 57.15"
-    )
-
-    print(
         f"Gap : "
         f"{(sum(all_scores) / len(all_scores)) - 57.15:.2f}"
     )
 
-    TARGET_MIN = 42.33
-    TARGET_MAX = 82.13
-    
-    score_band_results = [
-    
-        item
-    
-        for item in results
-    
-        if TARGET_MIN
-        <= item["score"]
-        <= TARGET_MAX
-    
-    ]
-
-    print(
-        f"Band Count : "
-        f"{len(score_band_results)}"
+    top_results = apply_diversity_filter(
+        results,
+        count
     )
 
-    low_score_count = len(
 
-        [
-
-            item
-
-            for item in results
-
-            if item["score"] < 80
-
-        ]
-
-    )
-
-    print(
-        f"Score < 80 : "
-        f"{low_score_count}"
-    )
-
-    if len(score_band_results) > 0:
-
-        scores = [
-            item["score"]
-            for item in score_band_results
-        ]
-
-        print(
-            f"Band Score Range : "
-            f"{min(scores):.2f}"
-            f" ~ "
-            f"{max(scores):.2f}"
-        )
-
-
-    if len(score_band_results) >= count:
-
-        top_results = (
-            apply_diversity_filter(
-                score_band_results,
-                count
-            )
-        )
-
-    else:
-
-        top_results = (
-            apply_diversity_filter(
-                results,
-                count
-            )
-        )
 
     consensus = get_consensus_numbers(
         top_results
@@ -696,15 +659,34 @@ def generate_numbers(
         top_n=6
     )
 
+    print(
+        f"results : {len(results)}"
+    )
+
+    print(
+        f"top_results : {len(top_results)}"
+    )
+
+    print("\n=== TOP RESULTS ===")
+
+    for item in top_results[:10]:
+
+        print(
+            item["score"],
+            item["numbers"]
+        )
+
     print("\n=== CORE NUMBERS ===")
 
     print(core_numbers)
+
     return top_results
+
 
 print("V2.5 number_generator loaded")
 
 def calculate_score_detail(
-    adaptive_score,
+    base_score,
     pair_score,
     triple_score,
     core_bonus,
@@ -712,21 +694,21 @@ def calculate_score_detail(
 ):
 
     window_score = (
-        window_pattern_score * 0.2
+        window_pattern_score
     )
 
     total_score = (
-        adaptive_score
-        + (pair_score * 0.01)
-        + (triple_score * 0.001)
+        base_score
+        + pair_score
+        + triple_score
         + core_bonus
         + window_score
     )
 
     return {
 
-        "adaptive": round(
-            adaptive_score,
+        "base": round(
+            base_score,
             2
         ),
 

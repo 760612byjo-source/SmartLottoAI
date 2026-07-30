@@ -207,9 +207,74 @@ def show_admin_page():
             )
 
             st.write(
+                f"Base 평균 : "
+                f"{summary['Base평균']}"
+            )
+
+            st.write(
+                f"Pair 평균 : "
+                f"{summary['Pair평균']}"
+            )
+
+            st.write(
+                f"Triple 평균 : "
+                f"{summary['Triple평균']}"
+            )
+
+            st.write(
+                f"Window 평균 : "
+                f"{summary['Window평균']}"
+            )
+
+            st.write(
+                f"Base 추천범위 : "
+                f"{summary['Base_10']} ~ "
+                f"{summary['Base_90']}"
+            )
+
+            st.write(
+                f"Pair 추천범위 : "
+                f"{summary['Pair_10']} ~ "
+                f"{summary['Pair_90']}"
+            )
+
+            st.write(
+                f"Triple 추천범위 : "
+                f"{summary['Triple_10']} ~ "
+                f"{summary['Triple_90']}"
+            )
+
+            st.write(
+                f"Window 추천범위 : "
+                f"{summary['Window_10']} ~ "
+                f"{summary['Window_90']}"
+            )
+
+            st.write(
                 f"상위80% 구간 : "
                 f"{summary['상위80%_하한']} ~ "
                 f"{summary['상위80%_상한']}"
+            )
+
+            st.write(
+                f"LAI 평균 : "
+                f"{summary['LAI평균']}"
+            )
+
+            st.write(
+                f"LAI 추천범위 : "
+                f"{summary['LAI_10']} ~ "
+                f"{summary['LAI_90']}"
+            )
+
+            st.write(
+                f"LAI 최소 : "
+                f"{summary['LAI최소']}"
+            )
+
+            st.write(
+                f"LAI 최대 : "
+                f"{summary['LAI최대']}"
             )
 
             st.subheader(
@@ -251,6 +316,596 @@ def show_admin_page():
             st.dataframe(
                 result_df,
                 use_container_width=True
+            )
+
+            st.subheader(
+                "📊 점수 분포 분석"
+            )
+
+            score_cols = [
+                "total",
+                "base",
+                "pair",
+                "triple",
+                "window"
+            ]
+
+            for col in score_cols:
+
+                st.markdown(
+                    f"### {col}"
+                )
+        
+                dist_df = (
+                    pd.cut(
+                        result_df[col],
+                        bins=20
+                    )
+                    .value_counts()
+                    .sort_index()
+                    .reset_index()
+                )
+
+                dist_df.columns = [
+                    "구간",
+                    "개수"
+                ]
+
+                dist_df["구간"] = (
+                    dist_df["구간"]
+                    .astype(str)
+                )
+
+                st.dataframe(
+                    dist_df,
+                    use_container_width=True
+                )
+
+                st.bar_chart(
+                    dist_df.set_index(
+                        "구간"
+                    )
+                )
+
+        if st.button(
+            "🎲 생성번호 점수 분석",
+            use_container_width=True
+        ):
+
+            from modules.score_engine import (
+                calculate_score
+            )
+
+            from modules.pair_engine import (
+                calculate_pair_score,
+                load_pair_cache
+            )
+
+            from modules.triple_engine import (
+                calculate_triple_score,
+                load_triple_cache
+            )
+
+            from modules.window_pattern_engine import (
+                build_window_patterns,
+                calculate_window_pattern_score
+            )
+
+            from modules.number_generator import (
+                calculate_score_detail,
+                generate_numbers
+            )
+
+            lotto_df = get_lotto_history()
+
+            pair_cache = load_pair_cache()
+
+            triple_cache = load_triple_cache()
+
+            window_patterns = (
+                build_window_patterns(
+                    lotto_df
+                )
+            )
+
+            generated = generate_numbers(
+                exclude_numbers=[],
+                include_numbers=[],
+                hot_numbers=[],
+                missing_numbers=[],
+                count=1000  
+            )
+
+            st.write(
+                f"생성 개수 : {len(generated)}"
+            )
+
+            if len(generated) == 0:
+
+                st.error(
+                    "생성된 번호가 없습니다."
+                )
+
+                return
+
+            results = []
+
+            for item in generated:
+
+                numbers = item["numbers"]
+
+                base_score = (
+                    calculate_score(
+                        numbers,
+                        [],
+                        [],
+                        []
+                    )
+                )
+
+                pair_score = (
+                    calculate_pair_score(
+                        numbers,
+                        pair_cache
+                    )
+                )
+
+                triple_score = (
+                    calculate_triple_score(
+                        numbers,
+                        triple_cache
+                    )
+                )
+
+                window_score = (
+                    calculate_window_pattern_score(
+                        numbers,
+                        window_patterns
+                    )
+                )
+
+                detail = (
+                    calculate_score_detail(
+                        base_score,
+                        pair_score,
+                        triple_score,
+                        0,
+                        window_score
+                    )
+                )
+
+                results.append({
+
+                    "numbers":
+                    ",".join(
+                        map(
+                            str,
+                            item["numbers"]
+                        )
+                    ),
+
+                    "base":
+                    detail["base"],
+
+                    "pair":
+                    detail["pair"],
+
+                    "triple":
+                    detail["triple"],
+
+                    "window":
+                    detail["window"],
+
+                    "total":
+                    detail["total"],
+
+                    "lai_score":
+                    item["score"]
+                })
+
+
+            result_df = pd.DataFrame(
+                results
+            )
+
+            profile_df = result_df[
+
+                (result_df["base"] >= 49)
+                &
+                (result_df["base"] <= 61)
+
+                &
+
+                (result_df["pair"] >= 276)
+                &
+                (result_df["pair"] <= 304)
+
+                &
+
+                (result_df["triple"] >= 48)
+                &
+                (result_df["triple"] <= 58)
+
+                &
+
+                (result_df["window"] >= 11)
+                &
+                (result_df["window"] <= 17)
+
+            ]
+
+            st.write(
+                f"프로파일 통과 : "
+                f"{len(profile_df):,} / "
+                f"{len(result_df):,}"
+            )
+
+            st.write(
+                f"통과율 : "
+                f"{len(profile_df)/len(result_df)*100:.2f}%"
+            )
+
+            st.subheader(
+                "🎲 생성번호 프로파일"
+            )
+
+            st.write(
+                f"Base 평균 : "
+                f"{result_df['base'].mean():.2f}"
+            )
+
+            st.write(
+                f"Pair 평균 : "
+                f"{result_df['pair'].mean():.2f}"
+            )
+
+            st.write(
+                f"Triple 평균 : "
+                f"{result_df['triple'].mean():.2f}"
+            )
+
+            st.write(
+                f"Window 평균 : "
+                f"{result_df['window'].mean():.2f}"
+            )
+
+            triple_pass = len(
+
+                result_df[
+                    result_df["triple"] >= 48
+                ]
+
+            )
+
+            st.write(
+                f"Triple 48+ : "
+                f"{triple_pass:,} / "
+                f"{len(result_df):,}"
+            )
+
+            st.write(
+                f"Triple 통과율 : "
+                f"{triple_pass / len(result_df) * 100:.2f}%"
+            )
+
+            score_cols = [
+                "base",
+                "pair",
+                "triple",
+                "window",
+                "total"
+            ]
+
+            st.write(
+                f"Triple 최대 : "
+                f"{result_df['triple'].max():.2f}"
+            )
+
+            st.write(
+                f"Triple 상위10 평균 : "
+                f"{result_df['triple'].nlargest(10).mean():.2f}"
+            )
+
+            st.write(
+                f"Triple 상위50 평균 : "
+                f"{result_df['triple'].nlargest(50).mean():.2f}"
+            )
+
+            top50 = result_df.nlargest(
+                50,
+                "lai_score"
+            )
+
+            st.write(
+                f"LAI Score 평균 : "
+                f"{result_df['lai_score'].mean():.2f}"
+            )
+
+            st.write(
+                f"LAI Score 최대 : "
+                f"{result_df['lai_score'].max():.2f}"
+            )
+
+            st.write(
+                f"LAI Score 최소 : "
+                f"{result_df['lai_score'].min():.2f}"
+            )
+
+            st.subheader(
+                "TOP50 상세 목록"
+            )
+
+            st.dataframe(
+                top50,
+                use_container_width=True
+            )
+
+            profile_top50 = top50[
+                        
+                (top50["base"] >= 49)
+                &
+                (top50["base"] <= 61)
+                        
+                &
+                        
+                (top50["pair"] >= 276)
+                &
+                (top50["pair"] <= 304)
+                        
+                &
+                        
+                (top50["triple"] >= 48)
+                &
+                (top50["triple"] <= 58)
+                        
+                &
+                        
+                (top50["window"] >= 11)
+                   &
+                (top50["window"] <= 17)
+                        
+            ]
+
+            st.write(
+                f"TOP50 프로파일 통과 : "
+                f"{len(profile_top50)} / 50"
+            )
+
+            st.subheader(
+                "TOP50 프로파일 통과 목록"
+            )
+
+            st.subheader(
+                "TOP50 Pair 분포"
+            )
+            
+            pair_dist = (
+                pd.cut(
+                    top50["pair"],
+                    bins=10
+                )
+                .value_counts()
+                .sort_index()
+                .reset_index()
+            )
+            
+            pair_dist.columns = [
+                "구간",
+                "개수"
+            ]
+            
+            st.dataframe(
+                pair_dist,
+                use_container_width=True
+            )
+            
+            
+
+            st.write(
+                f"프로파일 통과 평균 Pair : "
+                f"{profile_top50['pair'].mean():.2f}"
+            )
+
+            st.write(
+                f"프로파일 통과 평균 Triple : "
+                f"{profile_top50['triple'].mean():.2f}"
+            )
+
+            st.write(
+                f"프로파일 통과 평균 Base : "
+                f"{profile_top50['base'].mean():.2f}"
+            )
+
+            st.write(
+                f"프로파일 통과 평균 Window : "
+                f"{profile_top50['window'].mean():.2f}"
+            )
+
+            st.dataframe(
+                profile_top50,
+                use_container_width=True
+            )
+
+            st.write(
+                f"프로파일 통과 최고 점수 : "
+                f"{profile_top50['lai_score'].max():.2f}"
+            )
+
+            st.write(
+                f"프로파일 통과 최저 점수 : "
+                f"{profile_top50['lai_score'].min():.2f}"
+            )
+
+            st.write(
+                f"프로파일 통과 평균 점수 : "
+                f"{profile_top50['lai_score'].mean():.2f}"
+            )
+            score_band = result_df[
+
+                (result_df["lai_score"] >= 75)
+
+                &
+
+                (result_df["lai_score"] <= 89)
+
+            ]
+
+            st.write(
+                f"75~89점 구간 : "
+                f"{len(score_band)} / "
+                f"{len(result_df)}"
+            )
+
+            score_band_profile = score_band[
+
+                (score_band["base"] >= 49)
+                &
+                (score_band["base"] <= 61)
+
+                &
+
+                (score_band["pair"] >= 276)
+                &
+                (score_band["pair"] <= 304)
+
+                &
+
+                (score_band["triple"] >= 48)
+                &
+                (score_band["triple"] <= 58)
+
+                &
+
+                (score_band["window"] >= 11)
+                &
+                (score_band["window"] <= 17)
+
+            ]
+
+            st.write(
+                f"75~89점 구간 프로파일 통과 : "
+                f"{len(score_band_profile)} / "
+                f"{len(score_band)}"
+            )
+
+            st.write(
+                f"68~70점 구간 통과율 : "
+                f"{len(score_band_profile) / max(len(score_band), 1) * 100:.2f}%"
+            )
+
+            st.write(
+                f"TOP50 Triple 평균 : "
+                f"{top50['triple'].mean():.2f}"
+            )
+
+            st.write(
+                f"TOP50 Pair 평균 : "
+                f"{top50['pair'].mean():.2f}"
+            )
+
+            st.write(
+                f"TOP50 Base 평균 : "
+                f"{top50['base'].mean():.2f}"
+            )
+
+            st.write(
+                f"TOP50 Window 평균 : "
+                f"{top50['window'].mean():.2f}"
+            )
+
+            st.write(
+                f"TOP50 총점 평균 : "
+                f"{top50['total'].mean():.2f}"
+            )
+
+            st.write(
+                f"TOP50 Pair 최소 : "
+                f"{top50['pair'].min():.2f}"
+            )
+
+            st.write(
+                f"TOP50 Pair 최대 : "
+                f"{top50['pair'].max():.2f}"
+            )
+
+            st.write(
+                f"TOP50 Pair 10% : "
+                f"{top50['pair'].quantile(0.10):.2f}"
+            )
+
+            st.write(
+                f"TOP50 Pair 90% : "
+                f"{top50['pair'].quantile(0.90):.2f}"
+            )
+
+            st.write(
+                f"TOP50 Base 10% : "
+                f"{top50['base'].quantile(0.10):.2f}"
+            )
+
+            st.write(
+                f"TOP50 Base 90% : "
+                f"{top50['base'].quantile(0.90):.2f}"
+            )
+
+            st.write(
+                f"TOP50 Triple 10% : "
+                f"{top50['triple'].quantile(0.10):.2f}"
+            )
+
+            st.write(
+                f"TOP50 Triple 90% : "
+                f"{top50['triple'].quantile(0.90):.2f}"
+            )
+
+            profile_top50_triple = top50[
+                top50["triple"] >= 48
+            ]
+
+            st.write(
+                f"TOP50 Triple48+ : "
+                f"{len(profile_top50_triple)} / 50"
+            )
+
+            for col in score_cols:
+
+                st.markdown(
+                    f"### {col}"
+                )
+
+                dist_df = (
+                    pd.cut(
+                        result_df[col],
+                        bins=20
+                    )
+                    .value_counts()
+                    .sort_index()
+                    .reset_index()
+                )
+
+                dist_df.columns = [
+                    "구간",
+                    "개수"
+                ]
+
+                dist_df["구간"] = (
+                    dist_df["구간"]
+                    .astype(str)
+                )
+
+                st.dataframe(
+                    dist_df,
+                    use_container_width=True
+                )
+
+                st.bar_chart(
+                    dist_df.set_index(
+                        "구간"
+                    )
+                )
+
+            st.write(
+                f"평균 점수 : {result_df['total'].mean():.2f}"
             )
 
     if missing_draws:

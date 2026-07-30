@@ -60,7 +60,7 @@ def analyze_winner_scores(
 
         ]
 
-        adaptive_score = (
+        base_score = (
             calculate_score(
                 numbers,
                 [],
@@ -94,7 +94,7 @@ def analyze_winner_scores(
 
         detail = (
             calculate_score_detail(
-                adaptive_score,
+                base_score,
                 pair_score,
                 triple_score,
                 core_bonus,
@@ -103,11 +103,35 @@ def analyze_winner_scores(
         )
 
         print(
-            f"Adaptive={adaptive_score:.2f} "
+            f"Base={base_score:.2f} "
             f"Pair={pair_score:.2f} "
             f"Triple={triple_score:.2f} "
             f"Core={core_bonus:.2f} "
             f"Window={window_score:.2f}"
+        )
+
+        lai_score = 0
+
+        lai_score += max(
+            0,
+            20 - abs(base_score - 51.41)
+        )
+
+        lai_score += max(
+            0,
+            30 - (
+                abs(pair_score - 294.33) / 2
+            )
+        )
+
+        lai_score += max(
+            0,
+            30 - abs(triple_score - 54.09)
+        )
+
+        lai_score += max(
+            0,
+            20 - abs(window_score - 13.70)
         )
 
         results.append({
@@ -115,8 +139,8 @@ def analyze_winner_scores(
             "회차":
             row["회차"],
 
-            "adaptive":
-            detail["adaptive"],
+            "base":
+            detail["base"],
 
             "pair":
             detail["pair"],
@@ -131,11 +155,32 @@ def analyze_winner_scores(
             detail["window"],
 
             "total":
-            detail["total"]
+            detail["total"],
+
+            "lai_score":
+            round(
+                lai_score,
+                2
+            )
         })
 
     df = pd.DataFrame(
         results
+    )
+
+    print(
+        "Base Mean =",
+        round(df["base"].mean(), 2)
+    )
+
+    print(
+        "Base Min =",
+        round(df["base"].min(), 2)
+    )
+
+    print(
+        "Base Max =",
+        round(df["base"].max(), 2)
     )
 
     print(
@@ -144,6 +189,56 @@ def analyze_winner_scores(
             df["total"].mean(),
             2
         )
+    )
+
+    top20 = (
+        df.sort_values(
+            "total",
+            ascending=False
+        )
+        .head(
+            int(len(df) * 0.2)
+        )
+    )
+
+    bottom20 = (
+        df.sort_values(
+            "total",
+            ascending=True
+        )
+        .head(
+            int(len(df) * 0.2)
+        )
+    )
+
+    print(
+        "\n=== 상위20% 평균 ==="
+    )
+
+    print(
+        top20[
+            [
+                "base",
+                "pair",
+                "triple",
+                "window"
+            ]
+        ].mean()
+    )
+
+    print(
+        "\n=== 하위20% 평균 ==="
+    )
+
+    print(
+        bottom20[
+            [
+                "base",
+                "pair",
+                "triple",
+                "window"
+            ]
+        ].mean()
     )
 
     print(
@@ -165,23 +260,67 @@ def analyze_winner_scores(
     summary = {
 
         "평균": round(
-            df["total"].mean(),
-            2
+            df["total"].mean(), 2
         ),
-
+        
         "최소": round(
-            df["total"].min(),
-            2
+            df["total"].min(), 2
         ),
 
         "최대": round(
-            df["total"].max(),
-            2
+            df["total"].max(), 2
         ),
 
         "중앙값": round(
-            df["total"].median(),
-            2
+            df["total"].median(), 2
+        ),
+        
+        "Base평균": round(
+            df["base"].mean(), 2
+        ),
+
+        "Pair평균": round(
+            df["pair"].mean(), 2
+        ),
+
+        "Triple평균": round(
+            df["triple"].mean(), 2
+        ),
+
+        "Window평균": round(
+            df["window"].mean(), 2
+        ),
+
+        "Base_10": round(
+            df["base"].quantile(0.10), 2
+        ),
+
+        "Base_90": round(
+            df["base"].quantile(0.90), 2
+        ),
+
+        "Pair_10": round(
+            df["pair"].quantile(0.10), 2
+        ),
+
+        "Pair_90": round(
+            df["pair"].quantile(0.90), 2
+        ),
+
+        "Triple_10": round(
+            df["triple"].quantile(0.10), 2
+        ),
+
+        "Triple_90": round(
+            df["triple"].quantile(0.90), 2
+        ),
+
+        "Window_10": round(
+            df["window"].quantile(0.10), 2
+        ),
+
+        "Window_90": round(
+            df["window"].quantile(0.90), 2
         ),
 
         "상위80%_하한": round(
@@ -191,6 +330,31 @@ def analyze_winner_scores(
 
         "상위80%_상한": round(
             df["total"].quantile(0.90),
+            2
+        ),
+        
+        "LAI평균": round(
+            df["lai_score"].mean(),
+            2
+        ),
+
+        "LAI_10": round(
+            df["lai_score"].quantile(0.10),
+            2
+        ),
+
+        "LAI_90": round(
+            df["lai_score"].quantile(0.90),
+            2
+        ),
+
+        "LAI최소": round(
+            df["lai_score"].min(),
+            2
+        ),
+
+        "LAI최대": round(
+            df["lai_score"].max(),
             2
         )
     }
