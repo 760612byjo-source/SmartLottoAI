@@ -436,7 +436,7 @@ def generate_numbers(
                 score += max(
                     0,
                     30 - (
-                        abs(pair_score - 294.33) / 2
+                        abs(pair_score - 294.33)
                     )
                 )
 
@@ -450,6 +450,16 @@ def generate_numbers(
                     20 - abs(window_pattern_score - 13.70)
                 )
 
+                if score >= 50:
+
+                    print(
+                        f"score={score:.2f} "
+                        f"base={base_score:.2f} "
+                        f"pair={pair_score:.2f} "
+                        f"triple={triple_score:.2f} "
+                        f"window={window_pattern_score:.2f}"
+                    )
+
                 core_bonus = calculate_core_bonus(
                     numbers,
                     core_numbers
@@ -459,18 +469,29 @@ def generate_numbers(
 
                 score += consecutive_score(
                     numbers
-                )                
-            
+                )
+
             else:
 
                 score = base_score
 
-        results.append(
-            {
-                "numbers": numbers,
-                "score": score
-            }
-        )
+            distance = (
+                abs(base_score - 51.41)
+                +
+                abs(pair_score - 294.33)
+                +
+                abs(triple_score - 54.09)
+                +
+                abs(window_pattern_score - 13.70)
+            )
+
+            results.append(
+                {
+                    "numbers": numbers,
+                    "score": score,
+                    "distance": distance
+                }
+            )
 
     # =========================
     # Evolution Generator
@@ -542,7 +563,7 @@ def generate_numbers(
                 score += max(
                     0,
                     30 - (
-                        abs(pair_score - 294.33) / 2
+                        abs(pair_score - 294.33)
                     )
                 )
 
@@ -567,17 +588,19 @@ def generate_numbers(
                     numbers
                 )
 
-                
-            results.append(
-                {
-                    "numbers": numbers,
-                    "score": score
-                }
-            )
-
     results.sort(
         key=lambda x: x["score"],
         reverse=True
+    )
+
+    print(
+        f"정렬후 최고점 : "
+        f"{results[0]['score']:.2f}"
+    )
+
+    print(
+        f"정렬후 TOP50 평균 : "
+        f"{sum(x['score'] for x in results[:50]) / 50:.2f}"
     )
 
     score_band_results = [
@@ -620,6 +643,28 @@ def generate_numbers(
         f"{sum(all_scores) / len(all_scores):.2f}"
     )
 
+    import numpy as np
+
+    print(
+        f"Generated Score 25% : "
+        f"{np.percentile(all_scores, 25):.2f}"
+    )
+
+    print(
+        f"Generated Score 50% : "
+        f"{np.percentile(all_scores, 50):.2f}"
+    )
+
+    print(
+        f"Generated Score 75% : "
+        f"{np.percentile(all_scores, 75):.2f}"
+    )
+
+    print(
+        f"Generated Score 90% : "
+        f"{np.percentile(all_scores, 90):.2f}"
+    )
+
     top_scores = sorted(
         all_scores,
         reverse=True
@@ -640,6 +685,15 @@ def generate_numbers(
         count
     )
 
+    print(
+        f"다양성필터후 최고점 : "
+        f"{max(x['score'] for x in top_results):.2f}"
+    )
+
+    print(
+        f"다양성필터후 평균 : "
+        f"{sum(x['score'] for x in top_results) / len(top_results):.2f}"
+    )
 
 
     consensus = get_consensus_numbers(

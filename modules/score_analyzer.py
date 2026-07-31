@@ -168,6 +168,35 @@ def analyze_winner_scores(
         results
     )
 
+    high_lai = df[
+        df["lai_score"] >= 75
+    ]
+
+    print(
+        f"LAI75+ 개수 : "
+        f"{len(high_lai)}"
+    )
+
+    print(
+        f"LAI75+ Pair 평균 : "
+        f"{high_lai['pair'].mean():.2f}"
+    )
+
+    print(
+        f"LAI75+ Triple 평균 : "
+        f"{high_lai['triple'].mean():.2f}"
+    )
+
+    print(
+        f"LAI75+ Base 평균 : "
+        f"{high_lai['base'].mean():.2f}"
+    )
+
+    print(
+        f"LAI75+ Window 평균 : "
+        f"{high_lai['window'].mean():.2f}"
+    )
+
     print(
         "Base Mean =",
         round(df["base"].mean(), 2)
@@ -338,6 +367,21 @@ def analyze_winner_scores(
             2
         ),
 
+        "LAI_25": round(
+            df["lai_score"].quantile(0.25),
+            2
+        ),
+
+        "LAI_50": round(
+            df["lai_score"].quantile(0.50),
+            2
+        ),
+
+        "LAI_75": round(
+            df["lai_score"].quantile(0.75),
+            2
+        ),
+
         "LAI_10": round(
             df["lai_score"].quantile(0.10),
             2
@@ -356,7 +400,34 @@ def analyze_winner_scores(
         "LAI최대": round(
             df["lai_score"].max(),
             2
+        ),
+
+        "LAI75_Pair": round(
+            high_lai["pair"].mean(),
+            2
+        ),
+
+        "LAI75_Triple": round(
+            high_lai["triple"].mean(),
+            2
+        ),
+
+        "LAI75_Base": round(
+            high_lai["base"].mean(),
+            2
+        ),
+
+        "LAI75_Window": round(
+            high_lai["window"].mean(),
+            2
         )
     }
+
+    print(
+        "LAI Percentiles",
+        df["lai_score"].quantile(0.25),
+        df["lai_score"].quantile(0.50),
+        df["lai_score"].quantile(0.75)
+    )
 
     return df, summary

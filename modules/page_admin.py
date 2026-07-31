@@ -268,6 +268,18 @@ def show_admin_page():
             )
 
             st.write(
+                f"LAI 25% : {summary['LAI_25']}"
+            )
+
+            st.write(
+                f"LAI 50% : {summary['LAI_50']}"
+            )
+
+            st.write(
+                f"LAI 75% : {summary['LAI_75']}"
+            )
+
+            st.write(
                 f"LAI 최소 : "
                 f"{summary['LAI최소']}"
             )
@@ -275,6 +287,26 @@ def show_admin_page():
             st.write(
                 f"LAI 최대 : "
                 f"{summary['LAI최대']}"
+            )
+
+            st.write(
+                f"LAI75+ Pair 평균 : "
+                f"{summary['LAI75_Pair']}"
+            )
+
+            st.write(
+                f"LAI75+ Triple 평균 : "
+                f"{summary['LAI75_Triple']}"
+            )
+
+            st.write(
+                f"LAI75+ Base 평균 : "
+                f"{summary['LAI75_Base']}"
+            )
+
+            st.write(
+                f"LAI75+ Window 평균 : "
+                f"{summary['LAI75_Window']}"
             )
 
             st.subheader(
@@ -310,11 +342,6 @@ def show_admin_page():
 
             st.dataframe(
                 bottom20_df,
-                use_container_width=True
-            )
-
-            st.dataframe(
-                result_df,
                 use_container_width=True
             )
 
@@ -499,6 +526,9 @@ def show_admin_page():
                     "total":
                     detail["total"],
 
+                    "raw_score":
+                    item["score"],
+
                     "lai_score":
                     item["score"]
                 })
@@ -508,31 +538,58 @@ def show_admin_page():
                 results
             )
 
+            result_df["distance"] = (
+                abs(result_df["base"] - 51.41)
+                +
+                abs(result_df["pair"] - 294.33)
+                +
+                abs(result_df["triple"] - 54.09)
+                +
+                abs(result_df["window"] - 13.70)
+            )
+
+            # =========================
+            # 당첨번호 프로파일 기준
+            # =========================
+
+            PROFILE_BASE_MIN = 49
+            PROFILE_BASE_MAX = 61
+
+            PROFILE_PAIR_MIN = 268
+            PROFILE_PAIR_MAX = 317.9
+
+            PROFILE_TRIPLE_MIN = 45
+            PROFILE_TRIPLE_MAX = 64
+
+            PROFILE_WINDOW_MIN = 10
+            PROFILE_WINDOW_MAX = 17
+
             profile_df = result_df[
 
-                (result_df["base"] >= 49)
+                (result_df["base"] >= PROFILE_BASE_MIN)
                 &
-                (result_df["base"] <= 61)
+                (result_df["base"] <= PROFILE_BASE_MAX)
 
                 &
 
-                (result_df["pair"] >= 276)
+                (result_df["pair"] >= PROFILE_PAIR_MIN)
                 &
-                (result_df["pair"] <= 304)
+                (result_df["pair"] <= PROFILE_PAIR_MAX)
 
                 &
 
-                (result_df["triple"] >= 48)
+                (result_df["triple"] >= PROFILE_TRIPLE_MIN)
                 &
-                (result_df["triple"] <= 58)
+                (result_df["triple"] <= PROFILE_TRIPLE_MAX)
 
                 &
 
-                (result_df["window"] >= 11)
+                (result_df["window"] >= PROFILE_WINDOW_MIN)
                 &
-                (result_df["window"] <= 17)
+                (result_df["window"] <= PROFILE_WINDOW_MAX)
 
             ]
+
 
             st.write(
                 f"프로파일 통과 : "
@@ -616,19 +673,36 @@ def show_admin_page():
                 "lai_score"
             )
 
+            distance_top50 = result_df.nsmallest(
+                50,
+                "distance"
+            )
+
+            final_recommendation = distance_top50[
+                (distance_top50["distance"] <= 8)
+                &
+                (distance_top50["pair"].between(290, 300))
+                &
+                (distance_top50["triple"] >= 53)
+            ].copy()
+
             st.write(
-                f"LAI Score 평균 : "
-                f"{result_df['lai_score'].mean():.2f}"
+                f"Distance 최소 : "
+                f"{distance_top50['distance'].min():.2f}"
             )
 
             st.write(
-                f"LAI Score 최대 : "
-                f"{result_df['lai_score'].max():.2f}"
+                f"Distance 평균 : "
+                f"{distance_top50['distance'].mean():.2f}"
             )
 
             st.write(
-                f"LAI Score 최소 : "
-                f"{result_df['lai_score'].min():.2f}"
+                f"Distance 최대 : "
+                f"{distance_top50['distance'].max():.2f}"
+            )
+            st.write(
+                f"Distance TOP50 LAI 평균 : "
+                f"{distance_top50['lai_score'].mean():.2f}"
             )
 
             st.subheader(
@@ -640,192 +714,61 @@ def show_admin_page():
                 use_container_width=True
             )
 
-            profile_top50 = top50[
-                        
-                (top50["base"] >= 49)
-                &
-                (top50["base"] <= 61)
-                        
-                &
-                        
-                (top50["pair"] >= 276)
-                &
-                (top50["pair"] <= 304)
-                        
-                &
-                        
-                (top50["triple"] >= 48)
-                &
-                (top50["triple"] <= 58)
-                        
-                &
-                        
-                (top50["window"] >= 11)
-                   &
-                (top50["window"] <= 17)
-                        
-            ]
+            st.subheader("🏆 최종 추천번호")
 
-            st.write(
-                f"TOP50 프로파일 통과 : "
-                f"{len(profile_top50)} / 50"
-            )
-
-            st.subheader(
-                "TOP50 프로파일 통과 목록"
-            )
-
-            st.subheader(
-                "TOP50 Pair 분포"
-            )
-            
-            pair_dist = (
-                pd.cut(
-                    top50["pair"],
-                    bins=10
-                )
-                .value_counts()
-                .sort_index()
-                .reset_index()
-            )
-            
-            pair_dist.columns = [
-                "구간",
-                "개수"
-            ]
-            
             st.dataframe(
-                pair_dist,
+                final_recommendation[
+                    [
+                        "numbers",
+                        "distance",
+                        "lai_score",
+                        "pair",
+                        "triple"
+                    ]
+                ],
                 use_container_width=True
             )
-            
-            
 
-            st.write(
-                f"프로파일 통과 평균 Pair : "
-                f"{profile_top50['pair'].mean():.2f}"
+            freq_df = get_number_frequency(
+                final_recommendation
             )
 
-            st.write(
-                f"프로파일 통과 평균 Triple : "
-                f"{profile_top50['triple'].mean():.2f}"
-            )
-
-            st.write(
-                f"프로파일 통과 평균 Base : "
-                f"{profile_top50['base'].mean():.2f}"
-            )
-
-            st.write(
-                f"프로파일 통과 평균 Window : "
-                f"{profile_top50['window'].mean():.2f}"
+            st.subheader(
+                "📊 Elite 번호 출현 빈도"
             )
 
             st.dataframe(
-                profile_top50,
+                freq_df,
+                use_container_width=True
+            )
+
+            st.subheader(
+                "🔥 Elite 핵심번호 TOP10"
+            )
+
+            st.dataframe(
+                freq_df.head(10),
                 use_container_width=True
             )
 
             st.write(
-                f"프로파일 통과 최고 점수 : "
-                f"{profile_top50['lai_score'].max():.2f}"
+                f"TOP50 Base 차이 : "
+                f"{top50['base'].mean() - 51.41:.2f}"
             )
 
             st.write(
-                f"프로파일 통과 최저 점수 : "
-                f"{profile_top50['lai_score'].min():.2f}"
+                f"TOP50 Pair 차이 : "
+                f"{top50['pair'].mean() - 294.33:.2f}"
             )
 
             st.write(
-                f"프로파일 통과 평균 점수 : "
-                f"{profile_top50['lai_score'].mean():.2f}"
-            )
-            score_band = result_df[
-
-                (result_df["lai_score"] >= 75)
-
-                &
-
-                (result_df["lai_score"] <= 89)
-
-            ]
-
-            st.write(
-                f"75~89점 구간 : "
-                f"{len(score_band)} / "
-                f"{len(result_df)}"
-            )
-
-            score_band_profile = score_band[
-
-                (score_band["base"] >= 49)
-                &
-                (score_band["base"] <= 61)
-
-                &
-
-                (score_band["pair"] >= 276)
-                &
-                (score_band["pair"] <= 304)
-
-                &
-
-                (score_band["triple"] >= 48)
-                &
-                (score_band["triple"] <= 58)
-
-                &
-
-                (score_band["window"] >= 11)
-                &
-                (score_band["window"] <= 17)
-
-            ]
-
-            st.write(
-                f"75~89점 구간 프로파일 통과 : "
-                f"{len(score_band_profile)} / "
-                f"{len(score_band)}"
+                f"TOP50 Triple 차이 : "
+                f"{top50['triple'].mean() - 54.09:.2f}"
             )
 
             st.write(
-                f"68~70점 구간 통과율 : "
-                f"{len(score_band_profile) / max(len(score_band), 1) * 100:.2f}%"
-            )
-
-            st.write(
-                f"TOP50 Triple 평균 : "
-                f"{top50['triple'].mean():.2f}"
-            )
-
-            st.write(
-                f"TOP50 Pair 평균 : "
-                f"{top50['pair'].mean():.2f}"
-            )
-
-            st.write(
-                f"TOP50 Base 평균 : "
-                f"{top50['base'].mean():.2f}"
-            )
-
-            st.write(
-                f"TOP50 Window 평균 : "
-                f"{top50['window'].mean():.2f}"
-            )
-
-            st.write(
-                f"TOP50 총점 평균 : "
-                f"{top50['total'].mean():.2f}"
-            )
-
-            st.write(
-                f"TOP50 Pair 최소 : "
-                f"{top50['pair'].min():.2f}"
-            )
-
-            st.write(
-                f"TOP50 Pair 최대 : "
-                f"{top50['pair'].max():.2f}"
+                f"TOP50 Window 차이 : "
+                f"{top50['window'].mean() - 13.70:.2f}"
             )
 
             st.write(
@@ -856,15 +799,6 @@ def show_admin_page():
             st.write(
                 f"TOP50 Triple 90% : "
                 f"{top50['triple'].quantile(0.90):.2f}"
-            )
-
-            profile_top50_triple = top50[
-                top50["triple"] >= 48
-            ]
-
-            st.write(
-                f"TOP50 Triple48+ : "
-                f"{len(profile_top50_triple)} / 50"
             )
 
             for col in score_cols:
@@ -953,6 +887,95 @@ def show_admin_page():
                 "실패",
                 status_log["failed_count"]
             )
+
+def analyze_winner_patterns(lotto_df):
+
+    rows = []
+
+    for _, row in lotto_df.iterrows():
+
+        nums = sorted([
+
+            row["번호1"],
+            row["번호2"],
+            row["번호3"],
+            row["번호4"],
+            row["번호5"],
+            row["번호6"]
+
+        ])
+
+        odd = sum(
+            1 for n in nums
+            if n % 2 == 1
+        )
+
+        even = 6 - odd
+
+        low = sum(
+            1 for n in nums
+            if n <= 22
+        )
+
+        high = 6 - low
+
+        consecutive = 0
+
+        for i in range(5):
+
+            if nums[i] + 1 == nums[i + 1]:
+                consecutive += 1
+
+        same_end = (
+            len(nums)
+            -
+            len(set(n % 10 for n in nums))
+        )
+
+        rows.append({
+
+            "sum": sum(nums),
+            "odd": odd,
+            "even": even,
+            "low": low,
+            "high": high,
+            "consecutive": consecutive,
+            "same_end": same_end
+
+        })
+
+    return pd.DataFrame(rows)
+
+from collections import Counter
+
+def get_number_frequency(df):
+
+    counter = Counter()
+
+    for numbers in df["numbers"]:
+
+        nums = list(
+            map(
+                int,
+                numbers.split(",")
+            )
+        )
+
+        counter.update(nums)
+
+    freq_df = pd.DataFrame({
+
+        "번호": list(counter.keys()),
+        "출현횟수": list(counter.values())
+
+    })
+
+    freq_df = freq_df.sort_values(
+        "출현횟수",
+        ascending=False
+    )
+
+    return freq_df
 
 def rebuild_cache_only():
 
