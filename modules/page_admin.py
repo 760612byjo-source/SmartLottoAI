@@ -328,6 +328,24 @@ def show_admin_page():
             )
 
             st.subheader(
+                "🎯 LAI 상위 20개"
+            )
+
+            top20_lai_df = (
+                result_df
+                .sort_values(
+                    "lai_score",
+                    ascending=False
+                )
+                .head(20)
+            )
+
+            st.dataframe(
+                top20_lai_df,
+                use_container_width=True
+            )
+
+            st.subheader(
                 "📉 하위 20개 점수"
             )
 

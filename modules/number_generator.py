@@ -133,6 +133,42 @@ def prime_check(numbers):
 
     return 1 <= prime_count <= 4
 
+def last_digit_check(numbers):
+
+    last_digits = [
+        n % 10
+        for n in numbers
+    ]
+
+    for digit in set(last_digits):
+
+        if last_digits.count(digit) >= 3:
+            return False
+
+    return True
+
+def arithmetic_pattern_check(numbers):
+
+    numbers = sorted(numbers)
+
+    gaps = [
+
+        numbers[i + 1] - numbers[i]
+
+        for i in range(len(numbers) - 1)
+
+    ]
+
+    max_same_gap = max(
+
+        gaps.count(gap)
+
+        for gap in set(gaps)
+
+    )
+
+    return max_same_gap < 4
+
 def consecutive_score(numbers):
 
     score = 0
@@ -361,6 +397,12 @@ def generate_numbers(
             continue
 
         if not prime_check(numbers):
+            continue
+
+        if not last_digit_check(numbers):
+            continue
+
+        if not arithmetic_pattern_check(numbers):
             continue
 
         if not exclude_check(
