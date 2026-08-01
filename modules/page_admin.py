@@ -31,6 +31,13 @@ from modules.score_analyzer import (
 from modules.lotto_db import (
     get_lotto_history
 )
+
+from modules.recommend_store import (
+    load_recommendations,
+    delete_all_recommendations,
+    delete_recommendation
+)
+
 def show_admin_page():
 
     if "logs" not in st.session_state:
@@ -461,6 +468,14 @@ def show_admin_page():
                 count=1000  
             )
 
+            from modules.consensus_engine import (
+                get_core_numbers
+            )
+
+            from modules.premium_generator import (
+                generate_premium_numbers
+            )
+
             st.write(
                 f"생성 개수 : {len(generated)}"
             )
@@ -550,6 +565,17 @@ def show_admin_page():
                     "lai_score":
                     item["score"]
                 })
+
+            core_numbers = get_core_numbers(
+                generated,
+                top_n=6
+            )
+
+            premium_numbers = generate_premium_numbers(
+                core_numbers,
+                [],
+                count=5
+            )
 
 
             result_df = pd.DataFrame(
@@ -860,6 +886,32 @@ def show_admin_page():
                 f"평균 점수 : {result_df['total'].mean():.2f}"
             )
 
+            st.subheader(
+                "🔥 핵심번호 TOP6"
+            )
+
+            st.success(
+                " / ".join(
+                    map(str, core_numbers)
+                )
+            )
+
+            st.subheader(
+                "👑 Premium 추천번호"
+            )
+
+            for idx, numbers in enumerate(
+                premium_numbers,
+                start=1
+            ):
+
+                st.write(
+                    f"{idx}번 : "
+                    + " ".join(
+                        map(str, numbers)
+                    )
+                )
+
     if missing_draws:
 
         preview = ", ".join(
@@ -905,6 +957,87 @@ def show_admin_page():
                 "실패",
                 status_log["failed_count"]
             )
+
+        st.markdown("---")
+
+        st.subheader(
+            "📁 추천번호 보관함"
+        )
+
+        history_df = load_recommendations()
+
+        search_text = st.text_input(
+            "🔍 추천번호 검색",
+            placeholder="번호 입력 (예: 42)"
+        )
+
+        if search_text:
+
+            history_df = history_df[
+
+                history_df["numbers"]
+                .astype(str)
+                .str.contains(
+                    search_text,
+                    case=False,
+                    na=False
+                )
+
+            ]
+
+        st.info(
+            f"검색 결과 : {len(history_df):,}건"
+        )
+
+        if not history_df.empty:
+
+            history_df = history_df.sort_values(
+                "created_at",
+                ascending=False
+            )
+
+        for idx, row in history_df.iterrows():
+
+            col1, col2, col3 = st.columns(
+                [2, 4, 1]
+            )
+
+            with col1:
+
+                st.write(
+                    row["created_at"]
+                )
+
+            with col2:
+
+                st.write(
+                    row["numbers"]
+                )
+
+            with col3:
+
+                if st.button(
+                    "🗑",
+                    key=f"del_{idx}"
+                ):
+
+                    delete_recommendation(
+                        idx
+                    )
+
+                    st.rerun()
+
+        if st.button(
+            "🗑 보관함 전체 삭제"
+        ):
+
+            delete_all_recommendations()
+
+            st.success(
+                "보관함 삭제 완료"
+            )
+
+            st.rerun()        
 
 def analyze_winner_patterns(lotto_df):
 

@@ -17,13 +17,32 @@ from modules.number_generator import (
     generate_numbers
 )
 
-from modules.consensus_engine import (
-    get_core_numbers
+from modules.update_manager import (
+    get_update_status
 )
 
-from modules.premium_generator import (
-    generate_premium_numbers
+from datetime import datetime
+
+from modules.recommend_store import (
+    save_recommendation
 )
+
+def get_ball_color(number):
+
+    if number <= 10:
+        return "#fbc400"    # 노랑
+
+    elif number <= 20:
+        return "#69c8f2"    # 파랑
+
+    elif number <= 30:
+        return "#ff7272"    # 빨강
+
+    elif number <= 40:
+        return "#aaaaaa"    # 회색(검정대신)
+
+    else:
+        return "#b0d840"    # 초록
 
 
 def show_generator_page():
@@ -56,88 +75,95 @@ def show_generator_page():
 
     st.subheader("🎯 최종 번호 생성기")
 
-    game_count = st.slider(
-        "생성 게임수",
-        min_value=1,
-        max_value=20,
-        value=10
+    status = get_update_status()
+
+    st.caption(
+        f"최신 데이터 반영 : {status['db_draw']}회"
     )
 
-    if st.button("번호 생성"):
+    st.markdown("")
 
-        exclude_numbers = (
-            exclude_df.head(10)["번호"]
-            .astype(int)
-            .tolist()
-        )
+    game_count = 5
 
-        include_numbers = (
-            include_df.head(10)["번호"]
-            .astype(int)
-            .tolist()
-        )
+    if st.button("🎯 추천번호 생성"):
 
-        results = generate_numbers(
-            exclude_numbers,
-            include_numbers,
-            hot_numbers,
-            missing_numbers,
-            game_count
-        )
-
-        core_numbers = get_core_numbers(
-            results,
-            top_n=6
-        )
-
-        premium_numbers = generate_premium_numbers(
-            core_numbers,
-            missing_numbers,
-            count=5
-        )
-
-        st.success(
-            f"{len(results)}게임 생성 완료"
-        )
-
-        for idx, item in enumerate(
-            results,
-            start=1
+        with st.spinner(
+            "🎱 LAI 분석 엔진 실행 중..."
         ):
 
-            st.write(
-                f"{idx}위 ⭐ "
-                f"({item['score']}점) : "
-                + " ".join(
-                    map(
-                        str,
-                        item["numbers"]
+            exclude_numbers = (
+                exclude_df.head(10)["번호"]
+                .astype(int)
+                .tolist()
+            )
+
+            include_numbers = (
+                include_df.head(10)["번호"]
+                .astype(int)
+                .tolist()
+            )
+
+            results = generate_numbers(
+                exclude_numbers,
+                include_numbers,
+                hot_numbers,
+                missing_numbers,
+                game_count
+            )
+
+            for item in results[:5]:
+
+                save_recommendation(
+                    item["numbers"]
+                )
+
+        st.subheader("🎯 LAI 추천")
+
+        with st.container(border=True):
+
+            rank_icons = [
+                "🥇",
+                "🥈",
+                "🥉",
+                "⭐",
+                "⭐"
+            ]
+
+            for idx, item in enumerate(results[:5]):
+
+                cols = st.columns(7)
+
+                cols[0].markdown(
+                    f"<div style='font-size:28px'>{rank_icons[idx]}</div>",
+                    unsafe_allow_html=True
+                )
+
+                for i, num in enumerate(
+                    item["numbers"],
+                    start=1
+                ):
+
+                    color = get_ball_color(num)
+
+                    cols[i].markdown(
+                        f"""
+        <div style="
+            width:52px;
+            height:52px;
+            border-radius:50%;
+            background:{color};
+            color:white;
+            font-weight:800;
+            font-size:22px;
+            text-align:center;
+            line-height:52px;
+            margin:auto;
+            border:2px solid rgba(255,255,255,0.25);
+        ">
+            {num}
+        </div>
+        """,
+                        unsafe_allow_html=True
                     )
-                )
-            )
 
-        st.subheader(
-            "🔥 핵심번호 TOP6"
-        )
-
-        st.success(
-            " / ".join(
-                map(str, core_numbers)
-            )
-        )
-
-        st.subheader(
-            "👑 Premium 추천번호"
-        )
-
-        for idx, numbers in enumerate(
-            premium_numbers,
-            start=1
-        ):
-
-            st.write(
-                f"{idx}번 : "
-                + " ".join(
-                    map(str, numbers)
-                )
-            )
+                st.divider()
