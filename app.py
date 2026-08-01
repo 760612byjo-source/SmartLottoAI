@@ -1,5 +1,8 @@
 import streamlit as st
 import os
+from modules.config_manager import (
+    load_settings
+)
 
 from modules.lotto_db import (
     get_lotto_history
@@ -22,7 +25,11 @@ st.set_page_config(
     layout="wide",
 )
 
-ADMIN_PASSWORD = "1234"
+settings = load_settings()
+
+ADMIN_PASSWORD = (
+    settings["admin_password"]
+)
 
 from modules.update_manager import (
     get_update_status
