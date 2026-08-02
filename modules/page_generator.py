@@ -73,7 +73,7 @@ def show_generator_page():
         missing_df
     )
 
-    st.subheader("🎯 최종 번호 생성기")
+    st.subheader("🎯 추천번호 생성")
 
     status = get_update_status()
 
@@ -148,15 +148,15 @@ def show_generator_page():
                     cols[i].markdown(
                         f"""
         <div style="
-            width:48px;
-            height:48px;
+            width:42px;
+            height:42px;
             border-radius:50%;
             background:{color};
             color:white;
             font-weight:800;
-            font-size:22px;
+            font-size:20px;
             text-align:center;
-            line-height:48px;
+            line-height:42px;
             margin:auto;
             border:2px solid rgba(255,255,255,0.25);
         ">
