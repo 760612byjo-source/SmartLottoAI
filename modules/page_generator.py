@@ -73,7 +73,7 @@ def show_generator_page():
         missing_df
     )
 
-    st.subheader("🎯 추천번호 생성")
+    st.subheader("🎯 최종 번호 생성기")
 
     status = get_update_status()
 
@@ -119,68 +119,51 @@ def show_generator_page():
 
         st.subheader("🎯 LAI 추천")
 
-        st.subheader("🎯 LAI 추천")
+        with st.container(border=True):
 
-with st.container(border=True):
+            rank_icons = [
+                "🥇",
+                "🥈",
+                "🥉",
+                "⭐",
+                "⭐"
+            ]
 
-    rank_icons = [
-        "🥇",
-        "🥈",
-        "🥉",
-        "⭐",
-        "⭐"
-    ]
+            for idx, item in enumerate(results[:5]):
 
-    for idx, item in enumerate(
-        results[:5]
-    ):
+                cols = st.columns(7)
 
-        balls_html = ""
+                cols[0].markdown(
+                    f"<div style='font-size:28px'>{rank_icons[idx]}</div>",
+                    unsafe_allow_html=True
+                )
 
-        for num in item["numbers"]:
+                for i, num in enumerate(
+                    item["numbers"],
+                    start=1
+                ):
 
-            color = get_ball_color(num)
+                    color = get_ball_color(num)
 
-            balls_html += f"""
-            <span style="
-                display:inline-flex;
-                width:48px;
-                height:48px;
-                border-radius:50%;
-                background:{color};
-                color:white;
-                font-weight:800;
-                font-size:22px;
-                align-items:center;
-                justify-content:center;
-                margin-right:8px;
-                margin-bottom:8px;
-            ">
-                {num}
-            </span>
-            """
+                    cols[i].markdown(
+                        f"""
+        <div style="
+            width:48px;
+            height:48px;
+            border-radius:50%;
+            background:{color};
+            color:white;
+            font-weight:800;
+            font-size:22px;
+            text-align:center;
+            line-height:48px;
+            margin:auto;
+            border:2px solid rgba(255,255,255,0.25);
+        ">
+            {num}
+        </div>
+        """,
+                        unsafe_allow_html=True
+                    )
 
-        st.markdown(
-            f"""
-            <div style="
-                padding:15px 0;
-            ">
-
-                <div style="
-                    font-size:30px;
-                    margin-bottom:12px;
-                ">
-                    {rank_icons[idx]}
-                </div>
-
-                <div>
-                    {balls_html}
-                </div>
-
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        if idx < 4:
-            st.divider()
+                st.divider()
