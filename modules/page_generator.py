@@ -132,7 +132,7 @@ def show_generator_page():
             for idx, item in enumerate(results[:5]):
 
                 cols = st.columns(
-                    [1.2,1,1,1,1,1,1]
+                    [1.2,0.8,0.8,0.8,0.8,0.8,0.8]
                 )
 
                 cols[0].markdown(
@@ -150,15 +150,15 @@ def show_generator_page():
                     cols[i].markdown(
                         f"""
         <div style="
-            width:42px;
-            height:42px;
+            width:34px;
+            height:34px;
             border-radius:50%;
             background:{color};
             color:white;
             font-weight:800;
-            font-size:18px;
+            font-size:15px;
             text-align:center;
-            line-height:42px;
+            line-height:34px;
             margin:auto;
             border:2px solid rgba(255,255,255,0.25);
         ">
