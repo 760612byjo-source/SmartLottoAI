@@ -131,7 +131,9 @@ def show_generator_page():
 
             for idx, item in enumerate(results[:5]):
 
-                cols = st.columns(7)
+                cols = st.columns(
+                    [1.2,1,1,1,1,1,1]
+                )
 
                 cols[0].markdown(
                     f"<div style='font-size:28px'>{rank_icons[idx]}</div>",
@@ -154,7 +156,7 @@ def show_generator_page():
             background:{color};
             color:white;
             font-weight:800;
-            font-size:20px;
+            font-size:18px;
             text-align:center;
             line-height:42px;
             margin:auto;
