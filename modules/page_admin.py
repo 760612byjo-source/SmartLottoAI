@@ -21,7 +21,8 @@ from modules.update_manager import (
 
 from modules.window_pattern_engine import (
     build_window_patterns,
-    show_window_patterns
+    show_window_patterns,
+    calculate_window_pattern_score
 )
 
 from modules.score_analyzer import (
@@ -36,6 +37,24 @@ from modules.recommend_store import (
     load_recommendations,
     delete_all_recommendations,
     delete_recommendation
+)
+
+from modules.pair_engine import (
+    load_pair_cache,
+    calculate_pair_score
+)
+
+from modules.triple_engine import (
+    load_triple_cache,
+    calculate_triple_score
+)
+
+from modules.score_engine import (
+    calculate_score
+)
+
+from modules.number_generator import (
+    calculate_score_detail
 )
 
 def show_admin_page():
@@ -423,30 +442,6 @@ def show_admin_page():
             "🎲 생성번호 점수 분석",
             use_container_width=True
         ):
-
-            from modules.score_engine import (
-                calculate_score
-            )
-
-            from modules.pair_engine import (
-                calculate_pair_score,
-                load_pair_cache
-            )
-
-            from modules.triple_engine import (
-                calculate_triple_score,
-                load_triple_cache
-            )
-
-            from modules.window_pattern_engine import (
-                build_window_patterns,
-                calculate_window_pattern_score
-            )
-
-            from modules.number_generator import (
-                calculate_score_detail,
-                generate_numbers
-            )
 
             lotto_df = get_lotto_history()
 
@@ -910,6 +905,254 @@ def show_admin_page():
                     + " ".join(
                         map(str, numbers)
                     )
+                )
+
+        st.markdown("---")
+
+        st.subheader("🔍 단일 번호 분석")
+
+        numbers_text = st.text_input(
+            "번호 입력",
+            placeholder="예: 6,7,11,15,39,43"
+        )
+
+        if st.button("🔍 분석 실행"):
+
+            try:
+
+                numbers = sorted(
+                    [
+                        int(x.strip())
+                        for x in numbers_text.split(",")
+                    ]
+                )
+
+                if len(numbers) != 6:
+
+                    st.error(
+                        "번호는 반드시 6개 입력해야 합니다."
+                    )
+
+                elif len(set(numbers)) != 6:
+
+                    st.error(
+                        "중복 번호가 있습니다."
+                    )
+
+                else:
+
+                    total = sum(numbers)
+
+                    odd_count = sum(
+                        n % 2
+                        for n in numbers
+                    )
+
+                    even_count = (
+                        6 - odd_count
+                    )
+
+                    low_count = len(
+                        [
+                            n for n in numbers
+                            if n <= 22
+                        ]
+                    )
+
+                    high_count = (
+                        6 - low_count
+                    )
+
+                    consecutive = []
+
+                    for i in range(5):
+
+                        if (
+                            numbers[i + 1]
+                            ==
+                            numbers[i] + 1
+                        ):
+
+                            consecutive.append(
+                                f"{numbers[i]}-{numbers[i+1]}"
+                            )
+
+                    st.markdown("### 📊 분석 결과")
+
+                    c1, c2 = st.columns(2)
+
+                    with c1:
+
+                        st.metric(
+                            "번호합",
+                            total
+                        )
+
+                        st.metric(
+                            "홀짝",
+                            f"{odd_count}:{even_count}"
+                        )
+
+                    with c2:
+
+                        st.metric(
+                            "고저",
+                            f"{low_count}:{high_count}"
+                        )
+
+                        st.metric(
+                            "연번",
+                            len(consecutive)
+                        )
+
+                    st.write(
+                        f"번호: {numbers}"
+                    )
+
+                    st.write(
+                        "연번 목록:",
+                        ", ".join(consecutive)
+                        if consecutive
+                        else "없음"
+                    )
+
+                    lotto_df = get_lotto_history()
+
+                    pair_cache = load_pair_cache()
+
+                    triple_cache = load_triple_cache()
+
+                    window_patterns = (
+                        build_window_patterns(
+                            lotto_df
+                        )
+                    )
+
+                    base_score = calculate_score(
+                        numbers,
+                        [],
+                        [],
+                        []
+                    )
+
+                    pair_score = calculate_pair_score(
+                        numbers,
+                        pair_cache
+                    )
+
+                    triple_score = calculate_triple_score(
+                        numbers,
+                        triple_cache
+                    )
+
+                    window_score = (
+                        calculate_window_pattern_score(
+                            numbers,
+                            window_patterns
+                        )
+                    )
+
+                    detail = (
+                        calculate_score_detail(
+                            base_score,
+                            pair_score,
+                            triple_score,
+                            0,
+                            window_score
+                        )
+                    )
+
+                    WINNER_AVG_BASE = 51.41
+                    WINNER_AVG_PAIR = 294.33
+                    WINNER_AVG_TRIPLE = 54.09
+                    WINNER_AVG_WINDOW = 13.70
+
+                    base_diff = (
+                        detail["base"]
+                        - WINNER_AVG_BASE
+                    )
+
+                    pair_diff = (
+                        detail["pair"]
+                        - WINNER_AVG_PAIR
+                    )
+
+                    triple_diff = (
+                        detail["triple"]
+                        - WINNER_AVG_TRIPLE
+                    )
+
+                    window_diff = (
+                        detail["window"]
+                        - WINNER_AVG_WINDOW
+                    )
+
+                    total_score = round(
+
+                        (
+                            detail["base"]
+                            + detail["pair"]
+                            + detail["triple"]
+                            + detail["window"]
+                        ) / 4,
+
+                        2
+                    )
+
+                    st.markdown(
+                        "### 📈 최근 당첨평균 대비"
+                    )
+
+                    compare_df = pd.DataFrame({
+
+                        "항목": [
+                            "Base",
+                            "Pair",
+                            "Triple",
+                            "Window"
+                        ],
+
+                        "현재값": [
+
+                            round(detail["base"], 2),
+
+                            round(detail["pair"], 2),
+
+                            round(detail["triple"], 2),
+
+                            round(detail["window"], 2)
+                        ],
+
+                        "당첨평균": [
+
+                            WINNER_AVG_BASE,
+                            WINNER_AVG_PAIR,
+                            WINNER_AVG_TRIPLE,
+                            WINNER_AVG_WINDOW
+                        ],
+
+                        "차이": [
+
+                            round(base_diff, 2),
+
+                            round(pair_diff, 2),
+
+                            round(triple_diff, 2),
+
+                            round(window_diff, 2)
+                        ]
+
+                    })
+
+                    st.dataframe(
+                        compare_df,
+                        use_container_width=True
+                    )
+
+            except Exception as e:
+
+                st.error(
+                    f"에러 발생 : {e}"
                 )
 
     if missing_draws:
