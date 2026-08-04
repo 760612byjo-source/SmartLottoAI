@@ -58,12 +58,12 @@ def get_historical_penalty(
     for _, row in lotto_df.iterrows():
 
         winner = {
-            row["1열"],
-            row["2열"],
-            row["3열"],
-            row["4열"],
-            row["5열"],
-            row["6열"]
+            row["번호1"],
+            row["번호2"],
+            row["번호3"],
+            row["번호4"],
+            row["번호5"],
+            row["번호6"]
         }
 
         hit = len(

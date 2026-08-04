@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 
 from modules.lotto_analysis import (
     get_recent_df,
@@ -47,6 +48,14 @@ def get_ball_color(number):
 
 def show_generator_page():
 
+    profile_summary = None
+    rank100_summary = None
+
+    candidate_count = 0
+    profile3_count = 0
+
+    results = []
+
     recent_df = get_recent_df()
 
     missing_df = get_missing_df()
@@ -56,6 +65,8 @@ def show_generator_page():
         .astype(int)
         .tolist()
     )
+
+    
 
     missing_numbers = (
         missing_df.head(10)["번호"]
@@ -103,6 +114,36 @@ def show_generator_page():
                 .tolist()
             )
 
+            debug_info = None
+
+            for item in results:
+
+                if item.get("_debug"):
+
+                    debug_info = item
+                    break
+
+            if debug_info:
+
+                st.subheader("📊 Profile 분포")
+
+                st.dataframe(
+                    pd.DataFrame(
+                        list(
+                            debug_info["profile_dist"].items()
+                        ),
+                        columns=[
+                            "Profile",
+                            "Count"
+                        ]
+                    )
+                )
+
+                st.write(
+                    f"candidate_df : "
+                    f"{debug_info['candidate_count']}"
+                )
+
             results = generate_numbers(
                 exclude_numbers,
                 include_numbers,
@@ -110,6 +151,32 @@ def show_generator_page():
                 missing_numbers,
                 game_count
             )
+
+            profile_summary = None
+            rank100_summary = None
+
+            candidate_count = 0
+            profile3_count = 0
+
+            if len(results) > 0:
+
+                profile_summary = results[0].get(
+                    "profile_summary"
+                )
+
+                rank100_summary = results[0].get(
+                    "rank100_summary"
+                )
+
+                candidate_count = results[0].get(
+                    "candidate_count",
+                    0
+                )
+
+                profile3_count = results[0].get(
+                    "profile3_count",
+                    0
+                )
 
             for item in results[:5]:
 
@@ -150,7 +217,7 @@ def show_generator_page():
                     cols[i].markdown(
                         f"""
         <div style="
-            width:34px;
+            width:34px; 
             height:34px;
             border-radius:50%;
             background:{color};
@@ -169,3 +236,39 @@ def show_generator_page():
                     )
 
                 st.divider()
+
+    st.markdown("### 🎯 생성번호 프로파일")
+
+    summary_df = pd.DataFrame([
+        {
+            "구분": "현재",
+            "Profile3+": profile3_count,
+            "후보수": candidate_count,
+        },
+        {
+            "구분": "기준",
+            "Profile3+": "50+",
+            "후보수": "충분",
+        }
+    ])
+
+    st.dataframe(
+        summary_df,
+        hide_index=True,
+        use_container_width=True
+    )
+
+    if profile_summary:
+
+        profile_df = pd.DataFrame(
+            {
+                "Profile": list(profile_summary.keys()),
+                "Count": list(profile_summary.values())
+            }
+        )
+
+        st.dataframe(
+            profile_df,
+            hide_index=True,
+            use_container_width=True
+        )

@@ -318,6 +318,69 @@ def calculate_core_bonus(
 
     return 0
 
+def calc_rank100(
+    base,
+    pair,
+    triple,
+    window
+):
+
+    score = 0
+
+    diff = abs(base - 51.41)
+
+    if diff <= 1:
+        score += 25
+    elif diff <= 2:
+        score += 20
+    elif diff <= 3:
+        score += 15
+    elif diff <= 4:
+        score += 10
+    elif diff <= 5:
+        score += 5
+
+    diff = abs(pair - 294.33)
+
+    if diff <= 5:
+        score += 25
+    elif diff <= 10:
+        score += 20
+    elif diff <= 15:
+        score += 15
+    elif diff <= 20:
+        score += 10
+    elif diff <= 25:
+        score += 5
+
+    diff = abs(triple - 54.09)
+
+    if diff <= 2:
+        score += 25
+    elif diff <= 4:
+        score += 20
+    elif diff <= 6:
+        score += 15
+    elif diff <= 8:
+        score += 10
+    elif diff <= 10:
+        score += 5
+
+    diff = abs(window - 13.70)
+
+    if diff <= 1:
+        score += 25
+    elif diff <= 2:
+        score += 20
+    elif diff <= 3:
+        score += 15
+    elif diff <= 4:
+        score += 10
+    elif diff <= 5:
+        score += 5
+
+    return score
+
 
 def generate_numbers(
     exclude_numbers,
@@ -333,7 +396,14 @@ def generate_numbers(
 
     adaptive_weights = get_adaptive_weights()
 
+    from modules.pair_engine import load_pair_cache
+
     pair_cache = load_pair_cache()
+
+    try:
+        print("cache size :", len(pair_cache))
+    except:
+        print(pair_cache)
 
     triple_cache = load_triple_cache()
 
@@ -356,7 +426,7 @@ def generate_numbers(
         hot_numbers[:6]
     )
 
-    candidate_count = count * 70
+    candidate_count = count * 200
 
     attempts = 0
 
@@ -426,10 +496,11 @@ def generate_numbers(
 
         base_score = calculate_score(
             numbers,
-            include_numbers,
-            hot_numbers,
-            missing_numbers
+            [],
+            [],
+            []
         )
+
 
         pair_score = calculate_pair_score(
             numbers,
@@ -527,13 +598,63 @@ def generate_numbers(
                 abs(window_pattern_score - 13.70)
             )
 
-            results.append(
-                {
-                    "numbers": numbers,
-                    "score": score,
-                    "distance": distance
-                }
+
+            # if profile_match >= 3:
+
+            #     print(
+            #         f"PASS "
+            #         f"profile={profile_match} "
+            #         f"rank100={rank100_score}"
+            #     )
+
+
+            detail = calculate_score_detail(
+                base_score,
+                pair_score,
+                triple_score,
+                0,
+                window_pattern_score
             )
+
+            if len(results) < 5:
+
+                print(
+                    f"base={base_score:.2f} "
+                    f"pair={pair_score:.2f} "
+                    f"triple={triple_score:.2f} "
+                    f"window={window_pattern_score:.2f}"
+                )
+
+            detail = calculate_score_detail(
+                base_score,
+                pair_score,
+                triple_score,
+                0,
+                window_pattern_score
+            )
+
+            detail = calculate_score_detail(
+                base_score,
+                pair_score,
+                triple_score,
+                0,
+                window_pattern_score
+            )
+
+            results.append(
+            {
+                "numbers": numbers,
+                "score": score,
+                "distance": distance,
+
+                "base": detail["base"],
+                "pair": detail["pair"],
+                "triple": detail["triple"],
+                "window": detail["window"]
+            }
+            )
+
+
 
     # =========================
     # Evolution Generator
@@ -555,9 +676,9 @@ def generate_numbers(
 
             base_score = calculate_score(
                 numbers,
-                include_numbers,
-                hot_numbers,
-                missing_numbers
+                [],
+                [],
+                []
             )
 
             pair_score = calculate_pair_score(
@@ -630,10 +751,187 @@ def generate_numbers(
                     numbers
                 )
 
+
     results.sort(
         key=lambda x: x["score"],
         reverse=True
     )
+
+    import pandas as pd
+
+    result_df = pd.DataFrame(results)
+
+    # =========================
+    # 생성번호 분석과 동일
+    # =========================
+
+    result_df["profile_score"] = (
+
+        result_df["base"]
+        .between(49, 61)
+        .astype(int)
+
+        +
+
+        result_df["pair"]
+        .between(268, 317.9)
+        .astype(int)
+
+        +
+
+        result_df["triple"]
+        .between(45, 64)
+        .astype(int)
+
+        +
+
+        result_df["window"]
+        .between(10, 17)
+        .astype(int)
+
+    )
+
+    profile_dist = (
+        result_df["profile_score"]
+        .value_counts()
+        .sort_index()
+        .to_dict()
+    )                           
+
+    result_df["rank100"] = result_df.apply(
+
+        lambda row:
+
+        calc_rank100(
+
+            row["base"],
+            row["pair"],
+            row["triple"],
+            row["window"]
+
+        ),
+
+        axis=1
+
+    )
+
+    candidate_df = result_df[
+
+        (result_df["profile_score"] >= 3)
+
+        &
+
+        (result_df["profile_score"] <= 4)
+
+        &
+
+        (result_df["rank100"] >= 30)
+
+        &
+
+        (result_df["rank100"] <= 70)
+
+    ].copy()
+
+
+
+    profile_dist = (
+        result_df["profile_score"]
+        .value_counts()
+        .sort_index()
+        .reset_index()
+    )
+
+    profile_dist.columns = [
+        "Profile",
+        "Count"
+    ]
+
+    print()
+    print("===== RANK100 DISTRIBUTION =====")
+
+    rank_dist = (
+        result_df["rank100"]
+        .value_counts()
+        .sort_index()
+        .reset_index()
+    )
+
+    rank_dist.columns = [
+        "Rank100",
+        "Count"
+    ]
+
+    print(rank_dist.to_string(index=False))
+    
+    print()
+    print(
+        f"candidate_df : {len(candidate_df)}"
+    )
+
+    band45 = (
+        candidate_df[
+            candidate_df["rank100"].between(45, 49)
+        ]
+        .sort_values(
+            "score",
+            ascending=False
+        )
+        .head(2)
+    )
+
+    band50 = (
+        candidate_df[
+            candidate_df["rank100"].between(50, 54)
+        ]
+        .sort_values(
+            "score",
+            ascending=False
+        )
+        .head(2)
+    )
+
+    band55 = (
+        candidate_df[
+            candidate_df["rank100"].between(55, 59)
+        ]
+        .sort_values(
+            "score",
+            ascending=False
+        )
+        .head(3)
+    )
+
+    band60 = (
+        candidate_df[
+            candidate_df["rank100"].between(60, 64)
+        ]
+        .sort_values(
+            "score",
+            ascending=False
+        )
+        .head(2)
+    )
+
+    band65 = (
+        candidate_df[
+            candidate_df["rank100"].between(65, 69)
+        ]
+        .sort_values(
+            "score",
+            ascending=False
+        )
+        .head(1)
+    )
+
+    final_df = pd.concat([
+        band45,
+        band50,
+        band55,
+        band60,
+        band65
+    ]).reset_index(drop=True)    
+        
 
     print(
         f"정렬후 최고점 : "
@@ -722,20 +1020,92 @@ def generate_numbers(
         f"{(sum(all_scores) / len(all_scores)) - 57.15:.2f}"
     )
 
-    top_results = apply_diversity_filter(
-        results,
-        count
-    )
+    
+
+    if len(final_df) == 0:
+
+        print(
+            "Profile/Rank100 후보 없음 → 기존 추천 사용"
+        )
+
+        top_results = apply_diversity_filter(
+            results[:100],
+            count
+        )
+
+    else:
+
+        top_results = final_df.to_dict(
+            orient="records"
+        )
+
+
+    for item in top_results:
+
+        if "profile_score" not in item:
+
+            item["profile_score"] = (
+                int(49 <= item["base"] <= 61)
+                +
+                int(268 <= item["pair"] <= 317.9)
+                +
+                int(45 <= item["triple"] <= 64)
+                +
+                int(10 <= item["window"] <= 17)
+            )
+
+        if "rank100" not in item:
+
+            item["rank100"] = calc_rank100(
+                item["base"],
+                item["pair"],
+                item["triple"],
+                item["window"]
+            )
+
+    print()
+
+    print("===== FINAL RESULT =====")
+
+    for item in top_results:
+
+        if "profile_score" in item:
+
+            print(
+                f"profile={item.get('profile_score', '-')} "
+                f"rank100={item.get('rank100', '-')} "
+                f"score={item['score']:.2f} "
+                f"{item['numbers']}"
+            )
+
+        else:
+
+            print(
+                f"score={item['score']:.2f} "
+                f"{item['numbers']}"
+            )
+
+    
 
     print(
-        f"다양성필터후 최고점 : "
-        f"{max(x['score'] for x in top_results):.2f}"
+        "Profile3+ 개수:",
+        len(
+            result_df[
+                result_df["profile_score"] >= 3
+            ]
+        )
     )
 
-    print(
-        f"다양성필터후 평균 : "
-        f"{sum(x['score'] for x in top_results) / len(top_results):.2f}"
-    )
+    if len(top_results) > 0:
+
+        print(
+            f"다양성필터후 평균 : "
+            f"{sum(x['score'] for x in top_results) / len(top_results):.2f}"
+        )
+
+    else:
+
+        print("top_results EMPTY")
 
 
     consensus = get_consensus_numbers(
@@ -767,14 +1137,64 @@ def generate_numbers(
 
     for item in top_results[:10]:
 
+        profile = item.get(
+            "profile_score",
+            "-"
+        )
+
+        rank100 = item.get(
+            "rank100",
+            "-"
+        )
+
         print(
-            item["score"],
-            item["numbers"]
+
+            f"score={item['score']:.2f} "
+
+            f"profile={profile} "
+
+            f"rank100={rank100} "
+
+            f"numbers={item['numbers']}"
+
         )
 
     print("\n=== CORE NUMBERS ===")
 
     print(core_numbers)
+
+    profile_dist = (
+        result_df["profile_score"]
+        .value_counts()
+        .sort_index()
+        .to_dict()
+    )
+
+    rank_dist = (
+        result_df["rank100"]
+        .value_counts()
+        .sort_index()
+        .to_dict()
+    )
+
+    top_results.append(
+    {
+        "_debug": True,
+        "profile_dist": profile_dist,
+        "candidate_count": len(candidate_df)
+    }
+    )
+
+    for item in top_results:
+
+        item["profile_summary"] = profile_dist
+        item["rank100_summary"] = rank_dist
+        item["candidate_count"] = len(candidate_df)
+        item["profile3_count"] = len(
+            result_df[
+                result_df["profile_score"] >= 3
+            ]
+        )
 
     return top_results
 

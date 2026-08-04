@@ -7,12 +7,12 @@ def build_pair_frequency(lotto_df):
     pair_counter = Counter()
 
     number_cols = [
-        "1열",
-        "2열",
-        "3열",
-        "4열",
-        "5열",
-        "6열"
+        "번호1",
+        "번호2",
+        "번호3",
+        "번호4",
+        "번호5",
+        "번호6"
     ]
 
     for _, row in lotto_df.iterrows():

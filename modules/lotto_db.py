@@ -1,14 +1,14 @@
 import pandas as pd
 from pathlib import Path
 
-DATA_FILE = Path("data/3.집계.xlsm")
+DATA_FILE = Path("data/lotto_history.xlsx")
 
 
 def load_lotto_db():
 
     df = pd.read_excel(
         DATA_FILE,
-        sheet_name="집계",
+        sheet_name="Sheet1",
         header=None
     )
 
@@ -25,19 +25,8 @@ def get_lotto_history():
     lotto = lotto.iloc[:, :20]
 
     lotto.columns = [
-        "년도",
         "회차",
         "추첨일",
-        "1등당첨자",
-        "1등금액",
-        "2등당첨자",
-        "2등금액",
-        "3등당첨자",
-        "3등금액",
-        "4등당첨자",
-        "4등금액",
-        "5등당첨자",
-        "5등금액",
         "번호1",
         "번호2",
         "번호3",

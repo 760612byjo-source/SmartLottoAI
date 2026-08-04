@@ -19,12 +19,12 @@ def build_triple_frequency(lotto):
     triple_counter = Counter()
 
     number_cols = [
-        "1열",
-        "2열",
-        "3열",
-        "4열",
-        "5열",
-        "6열"
+        "번호1",
+        "번호2",
+        "번호3",
+        "번호4",
+        "번호5",
+        "번호6"
     ]
 
     for _, row in lotto.iterrows():

@@ -3,59 +3,27 @@
 import streamlit as st
 import pandas as pd
 
-from modules.pair_builder import (
-    save_pair_cache
-)
+import modules.pair_builder
 
-from modules.triple_builder import (
-    save_triple_cache
-)
+import modules.triple_builder
 
-from modules.update_manager import (
-    run_full_update,
-    get_update_status,
-    get_cache_status,
-    get_missing_draws,
-    load_update_status_log
-)
+import modules.update_manager
 
-from modules.window_pattern_engine import (
-    build_window_patterns,
-    show_window_patterns,
-    calculate_window_pattern_score
-)
+import modules.window_pattern_engine
 
-from modules.score_analyzer import (
-    analyze_winner_scores
-)
+import modules.score_analyzer
 
-from modules.lotto_db import (
-    get_lotto_history
-)
+import modules.lotto_db
 
-from modules.recommend_store import (
-    load_recommendations,
-    delete_all_recommendations,
-    delete_recommendation
-)
+import modules.recommend_store
 
-from modules.pair_engine import (
-    load_pair_cache,
-    calculate_pair_score
-)
+import modules.pair_engine
 
-from modules.triple_engine import (
-    load_triple_cache,
-    calculate_triple_score
-)
+import modules.triple_engine
 
-from modules.score_engine import (
-    calculate_score
-)
+import modules.score_engine
 
-from modules.number_generator import (
-    calculate_score_detail
-)
+import modules.number_generator
 
 def show_admin_page():
 
@@ -66,10 +34,10 @@ def show_admin_page():
 
     st.markdown("---")
 
-    status = get_update_status()
-    cache_info = get_cache_status()
+    status = modules.update_manager.get_update_status()
+    cache_info = modules.update_manager.get_cache_status()
 
-    missing_draws = get_missing_draws()
+    missing_draws = modules.update_manager.get_missing_draws()
     update_range = ""
 
     if missing_draws:
@@ -156,7 +124,7 @@ def show_admin_page():
                 "전체 업데이트 진행 중..."
             ):
 
-                st.session_state.logs = run_full_update()
+                st.session_state.logs = modules.update_manager.run_full_update()
 
             st.success(
                 "✅ 전체 업데이트 완료"
@@ -193,13 +161,13 @@ def show_admin_page():
             use_container_width=True
         ):
 
-            lotto_df = get_lotto_history()
+            lotto_df = modules.lotto_db.get_lotto_history()
 
-            patterns = build_window_patterns(
+            patterns = modules.window_pattern_engine.build_window_patterns(
                 lotto_df
             )
 
-            show_window_patterns(
+            modules.window_pattern_engine.show_window_patterns(
                 patterns
             )
 
@@ -208,12 +176,265 @@ def show_admin_page():
             use_container_width=True
         ):
 
-            lotto_df = get_lotto_history()
+            lotto_df = modules.lotto_db.get_lotto_history()
 
             result_df, summary = (
-                analyze_winner_scores(
+                modules.score_analyzer.analyze_winner_scores(
                     lotto_df
                 )
+            )
+
+            result_df["profile_score"] = (
+
+                result_df["base"]
+                .between(49, 61)
+                .astype(int)
+
+                +
+
+                result_df["pair"]
+                .between(268, 317.9)
+                .astype(int)
+
+                +
+
+                result_df["triple"]
+                .between(45, 64)
+                .astype(int)
+
+                +
+
+                result_df["window"]
+                .between(10, 17)
+                .astype(int)
+
+            )
+
+            result_df["rank100"] = result_df.apply(
+
+                lambda row:
+
+                calc_rank100(
+
+                    row["base"],
+                    row["pair"],
+                    row["triple"],
+                    row["window"]
+
+                ),
+
+                axis=1
+            )
+
+            
+            condition_df = result_df[
+
+                (result_df["profile_score"] >= 3)
+
+                &
+
+                (result_df["profile_score"] <= 4)
+
+                &
+
+                (result_df["rank100"] >= 30)
+
+                &
+
+                (result_df["rank100"] <= 70)
+
+            ]
+
+            st.subheader(
+                "🎯 Rank100 구간 분포"
+            )
+
+            st.write(
+
+                result_df["rank100"]
+                .value_counts()
+                .sort_index()
+
+            )
+
+
+            # st.dataframe(
+            #     profile_rank,
+            #     use_container_width=True
+            # )
+
+
+
+            result_df["profile_score"]
+
+            st.write(
+
+                result_df["profile_score"]
+                .value_counts()
+                .sort_index()
+
+            )
+
+            winner_like_df = result_df[
+
+                (result_df["profile_score"] >= 3)
+
+                &
+
+                (result_df["profile_score"] <= 4)
+
+                &
+
+                (result_df["rank100"] >= 30)
+
+                &
+
+                (result_df["rank100"] <= 70)
+
+            ]
+
+
+            st.subheader(
+                "🎯 Profile3~4 + Rank100(30~70)"
+            )
+
+            st.write(
+                f"조건 만족 : "
+                f"{len(condition_df):,} / "
+                f"{len(result_df):,}"
+            )
+
+            st.write(
+                f"비율 : "
+                f"{len(condition_df) / len(result_df) * 100:.2f}%"
+            )
+
+            profile3_df = result_df[
+                result_df["profile_score"] == 3
+            ]
+
+            profile4_df = result_df[
+                result_df["profile_score"] == 4
+            ]
+
+            st.write(
+                f"Profile3 : {len(profile3_df):,}"
+            )
+
+            st.write(
+                f"Profile4 : {len(profile4_df):,}"
+            )
+
+            profile3_df = result_df[
+                result_df["profile_score"] == 3
+            ]
+
+            profile4_df = result_df[
+                result_df["profile_score"] == 4
+            ]
+
+            st.write(
+                f"Profile3 : {len(profile3_df):,}"
+            )
+
+            st.write(
+                f"Profile4 : {len(profile4_df):,}"
+            )
+
+            rank_profile_df = (
+                result_df[
+                    (result_df["profile_score"] >= 3)
+                    &
+                    (result_df["profile_score"] <= 4)
+                    &
+                    (result_df["rank100"] >= 30)
+                    &
+                    (result_df["rank100"] <= 70)
+                ]
+                .groupby(
+                    ["rank100", "profile_score"]
+                )
+                .size()
+                .unstack(fill_value=0)
+                .reset_index()
+            )
+
+            rank_profile_df.columns = [
+                "Rank100",
+                "Profile3",
+                "Profile4"
+            ]
+
+            rank_profile_df["합계"] = (
+                rank_profile_df["Profile3"]
+                +
+                rank_profile_df["Profile4"]
+            )
+
+            st.subheader(
+                "🎯 Profile3~4 + Rank100(30~70)"
+            )
+
+            st.dataframe(
+                rank_profile_df,
+                use_container_width=True
+            )
+
+            profile34_df = result_df[
+
+                (result_df["profile_score"] >= 3)
+
+                &
+
+                (result_df["profile_score"] <= 4)
+
+            ]
+
+            st.success(
+                f"""
+                전체 당첨번호 : {len(result_df):,}
+
+                조건 만족 :
+                {len(condition_df):,}
+
+                비율 :
+                {len(condition_df)/len(result_df)*100:.2f}%
+
+                Profile3~4 전체 :
+                {len(profile34_df):,}
+
+                Profile3~4 중 조건 만족 :
+                {len(condition_df)/len(profile34_df)*100:.2f}%
+                """
+            )
+
+
+            # st.write(
+            #     f"Profile3~4 중 조건만족 : "
+            #     f"{len(condition_df):,} / "
+            #     f"{len(profile34_df):,}"
+            # )
+
+            # st.write(
+            #     f"비율 : "
+            #     f"{len(condition_df) / len(profile34_df) * 100:.2f}%"
+            # )
+
+            st.dataframe(
+
+                condition_df[
+                    [
+                        "회차",
+                        "profile_score",
+                        "rank100",
+                        "base",
+                        "pair",
+                        "triple",
+                        "window"
+                    ]
+                ],
+
+                use_container_width=True
             )
 
             st.write(
@@ -372,24 +593,6 @@ def show_admin_page():
             )
 
             st.subheader(
-                "📉 하위 20개 점수"
-            )
-
-            bottom20_df = (
-                result_df
-                .sort_values(
-                    "total",
-                    ascending=True
-                )
-                .head(20)
-            )
-
-            st.dataframe(
-                bottom20_df,
-                use_container_width=True
-            )
-
-            st.subheader(
                 "📊 점수 분포 분석"
             )
 
@@ -432,35 +635,35 @@ def show_admin_page():
                     use_container_width=True
                 )
 
-                st.bar_chart(
-                    dist_df.set_index(
-                        "구간"
-                    )
-                )
+                #st.bar_chart(
+                    #dist_df.set_index(
+                        #"구간"
+                    #)
+                #)
 
         if st.button(
             "🎲 생성번호 점수 분석",
             use_container_width=True
         ):
 
-            lotto_df = get_lotto_history()
+            lotto_df = modules.lotto_db.get_lotto_history()
 
-            pair_cache = load_pair_cache()
+            pair_cache = modules.pair_engine.load_pair_cache()
 
-            triple_cache = load_triple_cache()
+            triple_cache = modules.triple_engine.load_triple_cache()
 
             window_patterns = (
-                build_window_patterns(
+                modules.window_pattern_engine.build_window_patterns(
                     lotto_df
                 )
             )
 
-            generated = generate_numbers(
+            generated = modules.number_generator.generate_numbers(
                 exclude_numbers=[],
                 include_numbers=[],
                 hot_numbers=[],
                 missing_numbers=[],
-                count=1000  
+                count=300
             )
 
             from modules.consensus_engine import (
@@ -487,10 +690,16 @@ def show_admin_page():
 
             for item in generated:
 
+                if not isinstance(item, dict):
+                    continue
+
+                if "numbers" not in item:
+                    continue
+
                 numbers = item["numbers"]
 
                 base_score = (
-                    calculate_score(
+                    modules.score_engine.calculate_score(
                         numbers,
                         [],
                         [],
@@ -499,28 +708,28 @@ def show_admin_page():
                 )
 
                 pair_score = (
-                    calculate_pair_score(
+                    modules.pair_engine.calculate_pair_score(
                         numbers,
                         pair_cache
                     )
                 )
 
                 triple_score = (
-                    calculate_triple_score(
+                    modules.triple_engine.calculate_triple_score(
                         numbers,
                         triple_cache
                     )
                 )
 
                 window_score = (
-                    calculate_window_pattern_score(
+                    modules.window_pattern_engine.calculate_window_pattern_score(
                         numbers,
                         window_patterns
                     )
                 )
 
                 detail = (
-                    calculate_score_detail(
+                    modules.number_generator.calculate_score_detail(
                         base_score,
                         pair_score,
                         triple_score,
@@ -561,16 +770,16 @@ def show_admin_page():
                     item["score"]
                 })
 
-            core_numbers = get_core_numbers(
-                generated,
-                top_n=6
-            )
+            # core_numbers = get_core_numbers(
+            #     generated,
+            #     top_n=6
+            # )
 
-            premium_numbers = generate_premium_numbers(
-                core_numbers,
-                [],
-                count=5
-            )
+            # premium_numbers = generate_premium_numbers(
+            #     core_numbers,
+            #     [],
+            #     count=5
+            # )
 
 
             result_df = pd.DataFrame(
@@ -586,6 +795,76 @@ def show_admin_page():
                 +
                 abs(result_df["window"] - 13.70)
             )
+
+            result_df["profile_score"] = (
+
+                result_df["base"]
+                .between(49, 61)
+                .astype(int)
+
+                +
+
+                result_df["pair"]
+                .between(268, 317.9)
+                .astype(int)
+
+                +
+
+                result_df["triple"]
+                .between(45, 64)
+                .astype(int)
+
+                +
+
+                result_df["window"]
+                .between(10, 17)
+                .astype(int)
+
+            )
+
+            # result_df["rank_score"] = (
+
+            #     result_df["profile_score"] * 100
+
+            #     -
+
+            #     result_df["distance"]
+
+            # )
+
+            result_df["rank100"] = result_df.apply(
+                        
+                lambda row:
+                        
+                calc_rank100(
+                        
+                    row["base"],
+                    row["pair"],
+                    row["triple"],
+                    row["window"]
+                        
+                ),
+                        
+                axis=1
+            )
+
+            candidate_df = result_df[
+
+                (result_df["profile_score"] >= 3)
+
+                &
+
+                (result_df["profile_score"] <= 4)
+
+                &
+
+                (result_df["rank100"] >= 30)
+
+                &
+
+                (result_df["rank100"] <= 70)
+
+            ].copy()
 
             # =========================
             # 당첨번호 프로파일 기준
@@ -712,18 +991,336 @@ def show_admin_page():
                 "lai_score"
             )
 
-            distance_top50 = result_df.nsmallest(
-                50,
-                "distance"
+            distance_top50 = (
+
+                result_df[
+                    result_df["profile_score"] >= 3
+                ]
+
+                .nsmallest(
+                    50,
+                    "distance"
+                )
+
             )
 
-            final_recommendation = distance_top50[
-                (distance_top50["distance"] <= 8)
+            candidate_df = result_df[
+
+                (result_df["profile_score"] >= 3)
+
                 &
-                (distance_top50["pair"].between(290, 300))
+
+                (result_df["profile_score"] <= 4)
+
                 &
-                (distance_top50["triple"] >= 53)
+
+                (result_df["rank100"] >= 45)
+
+                &
+
+                (result_df["rank100"] <= 65)
+
             ].copy()
+
+            st.write(
+                f"조건 통과 : "
+                f"{len(candidate_df):,} / "
+                f"{len(result_df):,}"
+            )
+
+            st.write(
+                f"통과율 : "
+                f"{len(candidate_df)/len(result_df)*100:.2f}%"
+            )
+
+            band45 = (
+                candidate_df[
+                    candidate_df["rank100"] == 45
+                ]
+                .sort_values(
+                    "lai_score",
+                    ascending=False
+                )
+                .head(2)
+            )
+
+            band50 = (
+                candidate_df[
+                    candidate_df["rank100"] == 50
+                ]
+                .sort_values(
+                    "lai_score",
+                    ascending=False
+                )
+                .head(2)
+            )
+
+            band55 = (
+                candidate_df[
+                    candidate_df["rank100"] == 55
+                ]
+                .sort_values(
+                    "lai_score",
+                    ascending=False
+                )
+                .head(3)
+            )
+
+            band60 = (
+                candidate_df[
+                    candidate_df["rank100"] == 60
+                ]
+                .sort_values(
+                    "lai_score",
+                    ascending=False
+                )
+                .head(2)
+            )
+
+            band65 = (
+                candidate_df[
+                    candidate_df["rank100"] == 65
+                ]
+                .sort_values(
+                    "lai_score",
+                    ascending=False
+                )
+                .head(1)
+            )
+
+            final_recommendation = pd.concat([
+                band45,
+                band50,
+                band55,
+                band60,
+                band65
+            ]).reset_index(drop=True)
+
+            st.subheader(
+                "🏆 Profile3~4 + Rank100(30~70)"
+            )
+
+            st.dataframe(
+
+                final_recommendation[
+                    [
+                        "numbers",
+                        "profile_score",
+                        "rank100",
+                        "lai_score",
+                        "base",
+                        "pair",
+                        "triple",
+                        "window"
+                    ]
+                ],
+
+                use_container_width=True
+            )
+
+            profile_top50 = (
+                result_df
+                .sort_values(
+                    ["profile_score", "lai_score"],
+                    ascending=[False, False]
+                )
+                .head(50)
+            )
+
+            # hybrid_top50 = (
+            #     result_df
+            #     .sort_values(
+            #         "rank_score",
+            #         ascending=False
+            #     )
+            #     .head(50)
+            # )
+
+            
+
+            st.subheader(
+                "📊 Distance vs Rank100"
+            )
+
+            st.write(
+                f"Distance TOP50 평균 Rank100 : "
+                f"{distance_top50['rank100'].mean():.2f}"
+            )
+
+            st.write(
+                f"Rank100 TOP50 평균 Rank100 : "
+                f"{final_recommendation['rank100'].mean():.2f}"
+            )
+
+            st.write(
+                f"Distance TOP50 평균 Profile : "
+                f"{distance_top50['profile_score'].mean():.2f}"
+            )
+
+            st.write(
+                f"Rank100 TOP50 평균 Profile : "
+                f"{final_recommendation['profile_score'].mean():.2f}"
+            )
+
+            st.subheader(
+                "🏆 Rank100 TOP10"
+            )
+
+            st.dataframe(
+
+                final_recommendation[
+                    [
+                        "numbers",
+                        "profile_score",
+                        "rank100",
+                        "base",
+                        "pair",
+                        "triple",
+                        "window"
+                    ]
+                ].head(10),
+
+                use_container_width=True
+            )
+
+            st.subheader(
+                "📊 Profile Score 분포"
+            )
+
+            st.dataframe(
+
+                result_df["profile_score"]
+                .value_counts()
+                .sort_index()
+                .reset_index()
+                .rename(
+                    columns={
+                        "index": "Profile Score",
+                        "profile_score": "개수"
+                    }
+                ),
+
+                use_container_width=True
+            )
+
+            profile_3plus = len(
+
+                result_df[
+                    result_df["profile_score"] >= 3
+                ]
+
+            )
+
+            st.write(
+                f"Profile 3점 이상 : "
+                f"{profile_3plus:,} / "
+                f"{len(result_df):,}"
+            )
+
+            st.write(
+                f"비율 : "
+                f"{profile_3plus / len(result_df) * 100:.2f}%"
+            )
+
+            st.subheader(
+                "📊 모델 비교"
+            )
+
+            # st.write(
+            #     f"Hybrid 평균 Profile : "
+            #     f"{hybrid_top50['profile_score'].mean():.2f}"
+            # )
+
+            # st.write(
+            #     f"Hybrid 평균 Distance : "
+            #     f"{hybrid_top50['distance'].mean():.2f}"
+            # )
+
+            # st.write(
+            #     f"Hybrid 평균 LAI : "
+            #     f"{hybrid_top50['lai_score'].mean():.2f}"
+            # )
+
+            st.write(
+
+                f"A모델 평균 Profile : "
+
+                f"{distance_top50['profile_score'].mean():.2f}"
+
+            )
+
+            st.write(
+
+                f"B모델 평균 Profile : "
+
+                f"{profile_top50['profile_score'].mean():.2f}"
+
+            )
+
+            st.write(
+
+                f"A모델 평균 Distance : "
+
+                f"{distance_top50['distance'].mean():.2f}"
+
+            )
+
+            st.write(
+
+                f"B모델 평균 Distance : "
+
+                f"{profile_top50['distance'].mean():.2f}"
+
+            )
+
+            # final_recommendation = distance_top50[
+            #     (distance_top50["distance"] <= 8)
+            #     &
+            #     (distance_top50["pair"].between(290, 300))
+            #     &
+            #     (distance_top50["triple"] >= 53)
+            # ].copy()
+
+            # final_recommendation = hybrid_top50[
+
+            #     hybrid_top50["profile_score"] >= 3
+
+            # ].copy()
+
+            final_recommendation = candidate_df.copy()
+
+            st.subheader(
+                "🏆 최종 추천번호 (10게임)"
+            )
+
+            st.dataframe(
+
+                final_recommendation[
+                    [
+                        "numbers",
+                        "profile_score",
+                        "rank100",
+                        "lai_score",
+                        "base",
+                        "pair",
+                        "triple",
+                        "window"
+                    ]
+                ],
+
+                use_container_width=True
+            )
+
+            st.write(
+                f"최종 후보 : "
+                f"{len(final_recommendation):,} / "
+                f"{len(result_df):,}"
+            )
+
+            st.write(
+                f"통과율 : "
+                f"{len(final_recommendation)/len(result_df)*100:.2f}%"
+            )
 
             st.write(
                 f"Distance 최소 : "
@@ -744,50 +1341,25 @@ def show_admin_page():
                 f"{distance_top50['lai_score'].mean():.2f}"
             )
 
-            st.subheader(
-                "TOP50 상세 목록"
-            )
+            st.subheader("🏆 Rank100 TOP50")
 
             st.dataframe(
-                top50,
-                use_container_width=True
-            )
 
-            st.subheader("🏆 최종 추천번호")
-
-            st.dataframe(
                 final_recommendation[
                     [
                         "numbers",
+                        "profile_score",
                         "distance",
-                        "lai_score",
-                        "pair",
-                        "triple"
+                        "rank100",
+                        "lai_score"
                     ]
                 ],
+
                 use_container_width=True
             )
 
             freq_df = get_number_frequency(
                 final_recommendation
-            )
-
-            st.subheader(
-                "📊 Elite 번호 출현 빈도"
-            )
-
-            st.dataframe(
-                freq_df,
-                use_container_width=True
-            )
-
-            st.subheader(
-                "🔥 Elite 핵심번호 TOP10"
-            )
-
-            st.dataframe(
-                freq_df.head(10),
-                use_container_width=True
             )
 
             st.write(
@@ -840,79 +1412,108 @@ def show_admin_page():
                 f"{top50['triple'].quantile(0.90):.2f}"
             )
 
-            for col in score_cols:
+            #for col in score_cols:
 
-                st.markdown(
-                    f"### {col}"
-                )
+                #st.markdown(
+                    #f"### {col}"
+                #)
 
-                dist_df = (
-                    pd.cut(
-                        result_df[col],
-                        bins=20
-                    )
-                    .value_counts()
-                    .sort_index()
-                    .reset_index()
-                )
+                #dist_df = (
+                    #pd.cut(
+                        #result_df[col],
+                        #bins=20
+                    #)
+                    #.value_counts()
+                    #.sort_index()
+                    #.reset_index()
+                #)
 
-                dist_df.columns = [
-                    "구간",
-                    "개수"
-                ]
+                #dist_df.columns = [
+                    #"구간",
+                    #"개수"
+                #]
 
-                dist_df["구간"] = (
-                    dist_df["구간"]
-                    .astype(str)
-                )
+                #dist_df["구간"] = (
+                    #dist_df["구간"]
+                    #.astype(str)
+                #)
 
-                st.dataframe(
-                    dist_df,
-                    use_container_width=True
-                )
+                #st.dataframe(
+                    #dist_df,
+                    #use_container_width=True
+                #)
 
-                st.bar_chart(
-                    dist_df.set_index(
-                        "구간"
-                    )
-                )
+                #st.bar_chart(
+                    #dist_df.set_index(
+                        #"구간"
+                    #)
+                #)
 
             st.write(
                 f"평균 점수 : {result_df['total'].mean():.2f}"
             )
 
-            st.subheader(
-                "🔥 핵심번호 TOP6"
-            )
+            # st.subheader(
+            #     "🔥 핵심번호 TOP6"
+            # )
 
-            st.success(
-                " / ".join(
-                    map(str, core_numbers)
-                )
-            )
+            # st.success(
+            #     " / ".join(
+            #         map(str, core_numbers)
+            #     )
+            # )
 
-            st.subheader(
-                "👑 Premium 추천번호"
-            )
+            # st.subheader(
+            #     "👑 Premium 추천번호"
+            # )
 
-            for idx, numbers in enumerate(
-                premium_numbers,
-                start=1
-            ):
+            # for idx, numbers in enumerate(
+            #     premium_numbers,
+            #     start=1
+            # ):
 
-                st.write(
-                    f"{idx}번 : "
-                    + " ".join(
-                        map(str, numbers)
-                    )
-                )
+            #     st.write(
+            #         f"{idx}번 : "
+            #         + " ".join(
+            #             map(str, numbers)
+            #         )
+            #     )
 
         st.markdown("---")
 
         st.subheader("🔍 단일 번호 분석")
 
+        lotto_df = modules.lotto_db.get_lotto_history()
+
+        latest_row = lotto_df.loc[
+            lotto_df["회차"].idxmax()
+        ]
+
+        latest_numbers = sorted([
+            latest_row["번호1"],
+            latest_row["번호2"],
+            latest_row["번호3"],
+            latest_row["번호4"],
+            latest_row["번호5"],
+            latest_row["번호6"]
+        ])
+
+        latest_text = ",".join(
+            map(str, latest_numbers)
+        )
+
+        if st.button("🎯 최신 당첨번호 분석"):
+
+            st.session_state.single_analysis = (
+                latest_text
+            )
+
         numbers_text = st.text_input(
             "번호 입력",
+            value=st.session_state.get(
+                "single_analysis",
+                ""
+            ),
             placeholder="예: 6,7,11,15,39,43"
         )
 
@@ -1016,44 +1617,44 @@ def show_admin_page():
                         else "없음"
                     )
 
-                    lotto_df = get_lotto_history()
+                    lotto_df = modules.lotto_db.get_lotto_history()
 
-                    pair_cache = load_pair_cache()
+                    pair_cache = modules.pair_engine.load_pair_cache()
 
-                    triple_cache = load_triple_cache()
+                    triple_cache = modules.triple_engine.load_triple_cache()
 
                     window_patterns = (
-                        build_window_patterns(
+                        modules.window_pattern_engine.build_window_patterns(
                             lotto_df
                         )
                     )
 
-                    base_score = calculate_score(
+                    base_score = modules.score_engine.calculate_score(
                         numbers,
                         [],
                         [],
                         []
                     )
 
-                    pair_score = calculate_pair_score(
+                    pair_score = modules.pair_engine.calculate_pair_score(
                         numbers,
                         pair_cache
                     )
 
-                    triple_score = calculate_triple_score(
+                    triple_score = modules.triple_engine.calculate_triple_score(
                         numbers,
                         triple_cache
                     )
 
                     window_score = (
-                        calculate_window_pattern_score(
+                        modules.window_pattern_engine.calculate_window_pattern_score(
                             numbers,
                             window_patterns
                         )
                     )
 
                     detail = (
-                        calculate_score_detail(
+                        modules.number_generator.calculate_score_detail(
                             base_score,
                             pair_score,
                             triple_score,
@@ -1123,25 +1724,24 @@ def show_admin_page():
                             round(detail["window"], 2)
                         ],
 
-                        "당첨평균": [
+                        "추천범위": [
 
-                            WINNER_AVG_BASE,
-                            WINNER_AVG_PAIR,
-                            WINNER_AVG_TRIPLE,
-                            WINNER_AVG_WINDOW
+                            "49 ~ 61",
+                            "268 ~ 317.9",
+                            "45 ~ 64",
+                            "10 ~ 17"
                         ],
 
-                        "차이": [
+                        "판정": [
 
-                            round(base_diff, 2),
+                            "✅" if 49 <= detail["base"] <= 61 else "❌",
 
-                            round(pair_diff, 2),
+                            "✅" if 268 <= detail["pair"] <= 317.9 else "❌",
 
-                            round(triple_diff, 2),
+                            "✅" if 45 <= detail["triple"] <= 64 else "❌",
 
-                            round(window_diff, 2)
+                            "✅" if 10 <= detail["window"] <= 17 else "❌"
                         ]
-
                     })
 
                     st.dataframe(
@@ -1169,7 +1769,7 @@ def show_admin_page():
             f"(총 {len(missing_draws):,}회)"
         )
 
-    status_log = load_update_status_log()
+    status_log = modules.update_manager.load_update_status_log()
 
     if status_log:
 
@@ -1207,7 +1807,7 @@ def show_admin_page():
             "📁 추천번호 보관함"
         )
 
-        history_df = load_recommendations()
+        history_df = modules.recommend_store.load_recommendations()
 
         search_text = st.text_input(
             "🔍 추천번호 검색",
@@ -1264,7 +1864,7 @@ def show_admin_page():
                     key=f"del_{idx}"
                 ):
 
-                    delete_recommendation(
+                    modules.recommend_store.delete_recommendation(
                         idx
                     )
 
@@ -1274,7 +1874,7 @@ def show_admin_page():
             "🗑 보관함 전체 삭제"
         ):
 
-            delete_all_recommendations()
+            modules.recommend_store.delete_all_recommendations()
 
             st.success(
                 "보관함 삭제 완료"
@@ -1340,11 +1940,11 @@ def analyze_winner_patterns(lotto_df):
 
     return pd.DataFrame(rows)
 
-from collections import Counter
+import collections
 
 def get_number_frequency(df):
 
-    counter = Counter()
+    counter = collections.Counter()
 
     for numbers in df["numbers"]:
 
@@ -1373,14 +1973,85 @@ def get_number_frequency(df):
 
 def rebuild_cache_only():
 
-    lotto_df = get_lotto_history()
+    lotto_df = modules.lotto_db.get_lotto_history()
 
-    pair_count = save_pair_cache(
+    pair_count = modules.pair_builder.save_pair_cache(
         lotto_df
     )
 
-    triple_count = save_triple_cache(
+    triple_count = modules.triple_builder.save_triple_cache(
         lotto_df
     )
 
     return pair_count, triple_count
+
+def calc_rank100(
+    base,
+    pair,
+    triple,
+    window
+):
+
+    score = 0
+
+    # Base (25점)
+
+    diff = abs(base - 51.41)
+
+    if diff <= 1:
+        score += 25
+    elif diff <= 2:
+        score += 20
+    elif diff <= 3:
+        score += 15
+    elif diff <= 4:
+        score += 10
+    elif diff <= 5:
+        score += 5
+
+    # Pair (25점)
+
+    diff = abs(pair - 294.33)
+
+    if diff <= 5:
+        score += 25
+    elif diff <= 10:
+        score += 20
+    elif diff <= 15:
+        score += 15
+    elif diff <= 20:
+        score += 10
+    elif diff <= 25:
+        score += 5
+
+    # Triple (25점)
+
+    diff = abs(triple - 54.09)
+
+    if diff <= 2:
+        score += 25
+    elif diff <= 4:
+        score += 20
+    elif diff <= 6:
+        score += 15
+    elif diff <= 8:
+        score += 10
+    elif diff <= 10:
+        score += 5
+
+    # Window (25점)
+
+    diff = abs(window - 13.70)
+
+    if diff <= 1:
+        score += 25
+    elif diff <= 2:
+        score += 20
+    elif diff <= 3:
+        score += 15
+    elif diff <= 4:
+        score += 10
+    elif diff <= 5:
+        score += 5
+
+    return score
