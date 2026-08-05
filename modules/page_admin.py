@@ -1663,50 +1663,57 @@ def show_admin_page():
                         )
                     )
 
-                    WINNER_AVG_BASE = 51.41
-                    WINNER_AVG_PAIR = 294.33
-                    WINNER_AVG_TRIPLE = 54.09
-                    WINNER_AVG_WINDOW = 13.70
+                    profile_score = (
 
-                    base_diff = (
-                        detail["base"]
-                        - WINNER_AVG_BASE
+                        int(49 <= detail["base"] <= 61)
+
+                        +
+
+                        int(268 <= detail["pair"] <= 317.9)
+
+                        +
+
+                        int(45 <= detail["triple"] <= 64)
+
+                        +
+
+                        int(10 <= detail["window"] <= 17)
+
                     )
 
-                    pair_diff = (
-                        detail["pair"]
-                        - WINNER_AVG_PAIR
-                    )
+                    rank100 = modules.number_generator.calc_rank100(
 
-                    triple_diff = (
-                        detail["triple"]
-                        - WINNER_AVG_TRIPLE
-                    )
-
-                    window_diff = (
+                        detail["base"],
+                        detail["pair"],
+                        detail["triple"],
                         detail["window"]
-                        - WINNER_AVG_WINDOW
+
                     )
 
-                    total_score = round(
+                    fitness_map = {
 
-                        (
-                            detail["base"]
-                            + detail["pair"]
-                            + detail["triple"]
-                            + detail["window"]
-                        ) / 4,
+                        45: "B+",
+                        50: "B",
+                        55: "A+",
+                        60: "A",
+                        65: "C+",
+                        70: "C"
 
-                        2
+                    }
+
+                    fitness = fitness_map.get(
+                        rank100,
+                        "-"
                     )
 
-                    st.markdown(
-                        "### 📈 최근 당첨평균 대비"
-                    )
+                    st.markdown("### 🎯 프로파일 분석")
 
-                    compare_df = pd.DataFrame({
+                    profile_df = pd.DataFrame({
 
                         "항목": [
+                            "Profile",
+                            "Rank100",
+                            "적합도",
                             "Base",
                             "Pair",
                             "Triple",
@@ -1715,24 +1722,37 @@ def show_admin_page():
 
                         "현재값": [
 
+                            profile_score,
+                            rank100,
+                            fitness,
+
                             round(detail["base"], 2),
-
                             round(detail["pair"], 2),
-
                             round(detail["triple"], 2),
-
                             round(detail["window"], 2)
+
                         ],
 
-                        "추천범위": [
+                        "기준": [
 
-                            "49 ~ 61",
-                            "268 ~ 317.9",
-                            "45 ~ 64",
-                            "10 ~ 17"
+                            "3~4",
+                            "45~65",
+                            "-",
+
+                            "49~61",
+                            "268~317.9",
+                            "45~64",
+                            "10~17"
+
                         ],
 
                         "판정": [
+
+                            "✅" if 3 <= profile_score <= 4 else "❌",
+
+                            "✅" if 45 <= rank100 <= 65 else "❌",
+
+                            "-",
 
                             "✅" if 49 <= detail["base"] <= 61 else "❌",
 
@@ -1741,11 +1761,13 @@ def show_admin_page():
                             "✅" if 45 <= detail["triple"] <= 64 else "❌",
 
                             "✅" if 10 <= detail["window"] <= 17 else "❌"
+
                         ]
                     })
 
                     st.dataframe(
-                        compare_df,
+                        profile_df,
+                        hide_index=True,
                         use_container_width=True
                     )
 

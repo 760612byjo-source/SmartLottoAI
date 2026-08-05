@@ -176,7 +176,7 @@ def show_generator_page():
             result_table.append(
                 {
                     "번호": idx + 1,
-                    "추천번호": ",".join(
+                    "추천번호": " · ".join(
                         map(str, item["numbers"])
                     ),
                     "Profile": item.get(
