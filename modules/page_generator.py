@@ -152,32 +152,6 @@ def show_generator_page():
                 game_count
             )
 
-            profile_summary = None
-            rank100_summary = None
-
-            candidate_count = 0
-            profile3_count = 0
-
-            if len(results) > 0:
-
-                profile_summary = results[0].get(
-                    "profile_summary"
-                )
-
-                rank100_summary = results[0].get(
-                    "rank100_summary"
-                )
-
-                candidate_count = results[0].get(
-                    "candidate_count",
-                    0
-                )
-
-                profile3_count = results[0].get(
-                    "profile3_count",
-                    0
-                )
-
             for item in results[:5]:
 
                 save_recommendation(
@@ -186,125 +160,38 @@ def show_generator_page():
 
         st.subheader("🎯 LAI 추천")
 
-        with st.container(border=True):
-
-            rank_icons = [
-                "🥇",
-                "🥈",
-                "🥉",
-                "⭐",
-                "⭐"
-            ]
-
-            for idx, item in enumerate(results[:5]):
-
-                cols = st.columns(
-                    [1.2,0.8,0.8,0.8,0.8,0.8,0.8]
-                )
-
-                cols[0].markdown(
-                    f"<div style='font-size:28px'>{rank_icons[idx]}</div>",
-                    unsafe_allow_html=True
-                )
-
-                for i, num in enumerate(
-                    item["numbers"],
-                    start=1
-                ):
-
-                    color = get_ball_color(num)
-
-                    cols[i].markdown(
-                        f"""
-        <div style="
-            width:34px; 
-            height:34px;
-            border-radius:50%;
-            background:{color};
-            color:white;
-            font-weight:800;
-            font-size:15px;
-            text-align:center;
-            line-height:34px;
-            margin:auto;
-            border:2px solid rgba(255,255,255,0.25);
-        ">
-            {num}
-        </div>
-        """,
-                        unsafe_allow_html=True
-                    )
-
-                st.divider()
-
-    result_table = []
-
-    icons = [
-        "🥇","🥈","🥉",
-        "⭐","⭐","⭐","⭐","⭐","⭐","⭐"
-    ]
-
-    for idx, item in enumerate(results[:10]):
-
-        result_table.append(
-            {
-                "순위": icons[idx],
-                "번호": ",".join(
-                    map(str, item["numbers"])
-                ),
-                "Score": round(
-                    item.get("score", 0),
-                    2
-                ),
-                "Profile": item.get(
-                    "profile_score",
-                    "-"
-                ),
-                "Rank100": item.get(
-                    "rank100",
-                    "-"
-                ),
-            }
-        )
-
-    st.dataframe(
-        pd.DataFrame(result_table),
-        hide_index=True,
-        use_container_width=True
-    )
-
-    st.markdown("### 🎯 생성번호 프로파일")
-
-    summary_df = pd.DataFrame([
-        {
-            "구분": "현재",
-            "Profile3+": profile3_count,
-            "후보수": candidate_count,
-        },
-        {
-            "구분": "기준",
-            "Profile3+": "50+",
-            "후보수": "충분",
+        fitness_map = {
+            45: "B+",
+            50: "B",
+            55: "A+",
+            60: "A",
+            65: "C+",
+            70: "C"
         }
-    ])
 
-    st.dataframe(
-        summary_df,
-        hide_index=True,
-        use_container_width=True
-    )
+        result_table = []
 
-    if profile_summary:
+        for idx, item in enumerate(results[:10]):
 
-        profile_df = pd.DataFrame(
-            {
-                "Profile": list(profile_summary.keys()),
-                "Count": list(profile_summary.values())
-            }
-        )
+            result_table.append(
+                {
+                    "번호": idx + 1,
+                    "추천번호": ",".join(
+                        map(str, item["numbers"])
+                    ),
+                    "Profile": item.get(
+                        "profile_score",
+                        "-"
+                    ),
+                    "적합도": fitness_map.get(
+                        item.get("rank100", 0),
+                        "-"
+                    )
+                }
+            )
 
         st.dataframe(
-            profile_df,
+            pd.DataFrame(result_table),
             hide_index=True,
             use_container_width=True
         )
