@@ -237,6 +237,42 @@ def show_generator_page():
 
                 st.divider()
 
+    result_table = []
+
+    icons = [
+        "🥇","🥈","🥉",
+        "⭐","⭐","⭐","⭐","⭐","⭐","⭐"
+    ]
+
+    for idx, item in enumerate(results[:10]):
+
+        result_table.append(
+            {
+                "순위": icons[idx],
+                "번호": ",".join(
+                    map(str, item["numbers"])
+                ),
+                "Score": round(
+                    item.get("score", 0),
+                    2
+                ),
+                "Profile": item.get(
+                    "profile_score",
+                    "-"
+                ),
+                "Rank100": item.get(
+                    "rank100",
+                    "-"
+                ),
+            }
+        )
+
+    st.dataframe(
+        pd.DataFrame(result_table),
+        hide_index=True,
+        use_container_width=True
+    )
+
     st.markdown("### 🎯 생성번호 프로파일")
 
     summary_df = pd.DataFrame([
