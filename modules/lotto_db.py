@@ -9,7 +9,8 @@ def load_lotto_db():
     df = pd.read_excel(
         DATA_FILE,
         sheet_name="Sheet1",
-        header=None
+        header=None,
+        engine="openpyxl"
     )
 
     return df
